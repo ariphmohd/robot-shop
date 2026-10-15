@@ -4,6 +4,69 @@ A complete polyglot microservices e-commerce application (`app/`) paired with an
 
 ---
 
+## Architecture Flow
+
+```mermaid
+flowchart TB
+    Browser([Customer browser]) -->|HTTP / HTTPS| Web[web<br/>Nginx + AngularJS]
+
+    subgraph Application[Application tier - containerized microservices]
+        direction LR
+        Catalogue[catalogue<br/>Node.js]
+        User[user<br/>Node.js]
+        Cart[cart<br/>Node.js]
+        Shipping[shipping<br/>Java / Spring Boot]
+        Ratings[ratings<br/>PHP / Symfony]
+        Payment[payment<br/>Python / Flask]
+        Dispatch[dispatch<br/>Go worker]
+    end
+
+    Web -->|/api/catalogue| Catalogue
+    Web -->|/api/user| User
+    Web -->|/api/cart| Cart
+    Web -->|/api/shipping| Shipping
+    Web -->|/api/ratings| Ratings
+    Web -->|/api/payment| Payment
+
+    Catalogue --> Mongo[(MongoDB<br/>catalogue)]
+    User --> MongoUsers[(MongoDB<br/>users)]
+    User --> Redis[(Redis<br/>sessions)]
+    Cart --> Redis
+    Cart -->|product validation| Catalogue
+    Shipping --> MySQL[(MySQL<br/>cities + ratings)]
+    Shipping -->|shipping fee| Cart
+    Ratings --> MySQL
+    Ratings -->|product validation| Catalogue
+    Payment -->|verify user| User
+    Payment -->|verify cart| Cart
+    Payment -. order event .-> RabbitMQ[(RabbitMQ<br/>orders)]
+    RabbitMQ -. order event .-> Dispatch
+
+    subgraph AWS[AWS deployment target provisioned by Terraform]
+        direction LR
+        ALB[Application Load Balancer] --> EKS[Amazon EKS]
+        Secrets[AWS Secrets Manager] -. credentials via IRSA .-> EKS
+        EKS --> RDS[Amazon RDS MySQL]
+        EKS --> Cache[ElastiCache Redis]
+        EKS --> MQ[Amazon MQ RabbitMQ]
+        EKS -. optional .-> DocDB[Amazon DocumentDB]
+    end
+
+    Browser -. production entry .-> ALB
+    EKS -. runs .-> Web
+    EKS -. runs .-> Catalogue
+    EKS -. runs .-> User
+    EKS -. runs .-> Cart
+    EKS -. runs .-> Shipping
+    EKS -. runs .-> Ratings
+    EKS -. runs .-> Payment
+    EKS -. runs .-> Dispatch
+```
+
+The `app/` directory supplies the complete local Docker Compose topology. The `infra/` directory provisions the AWS target; Kubernetes workload manifests and image publishing are the next implementation layer.
+
+---
+
 ## 📁 Monorepo Structure
 
 ```text
