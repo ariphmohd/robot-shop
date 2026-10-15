@@ -1,0 +1,196 @@
+<!-- ==========================================================================
+     AriphMohd Robot Shop - Flipkart-Inspired Search & Listing Page
+     ========================================================================== -->
+<div class="search-results-layout">
+
+    <!-- Left Filter Sidebar -->
+    <aside class="filter-sidebar" aria-label="Filters">
+        <div class="filter-header">
+            <h3 class="filter-title">Filters</h3>
+            <button type="button" class="clear-filters-btn" ng-click="clearFilters();">Clear All</button>
+        </div>
+
+        <!-- 1. Categories Filter -->
+        <div class="filter-group">
+            <div class="filter-group-title">CATEGORIES</div>
+            <label class="filter-option">
+                <input type="radio" name="catFilter" ng-checked="filters.category === 'All'" ng-click="setCategoryFilter('All')"/>
+                <span>All Robotics Fleet</span>
+            </label>
+            <label class="filter-option" ng-repeat="cat in data.categories">
+                <input type="radio" name="catFilter" ng-checked="filters.category === cat" ng-click="setCategoryFilter(cat)"/>
+                <span>{{ cat }}</span>
+            </label>
+        </div>
+
+        <!-- 2. Price Range Filter -->
+        <div class="filter-group">
+            <div class="filter-group-title">PRICE RANGE</div>
+            <label class="filter-option">
+                <input type="radio" name="priceRange" ng-checked="filters.priceRange === 'all'" ng-click="setPriceFilter('all')"/>
+                <span>All Prices</span>
+            </label>
+            <label class="filter-option">
+                <input type="radio" name="priceRange" ng-checked="filters.priceRange === 'under500'" ng-click="setPriceFilter('under500')"/>
+                <span>Under &euro;500</span>
+            </label>
+            <label class="filter-option">
+                <input type="radio" name="priceRange" ng-checked="filters.priceRange === '500to1500'" ng-click="setPriceFilter('500to1500')"/>
+                <span>&euro;500 &ndash; &euro;1,500</span>
+            </label>
+            <label class="filter-option">
+                <input type="radio" name="priceRange" ng-checked="filters.priceRange === '1500to3000'" ng-click="setPriceFilter('1500to3000')"/>
+                <span>&euro;1,500 &ndash; &euro;3,000</span>
+            </label>
+            <label class="filter-option">
+                <input type="radio" name="priceRange" ng-checked="filters.priceRange === 'above3000'" ng-click="setPriceFilter('above3000')"/>
+                <span>Above &euro;3,000</span>
+            </label>
+        </div>
+
+        <!-- 3. Availability Filter -->
+        <div class="filter-group">
+            <div class="filter-group-title">AVAILABILITY</div>
+            <label class="filter-option">
+                <input type="checkbox" ng-checked="filters.inStockOnly" ng-click="toggleInStockFilter()"/>
+                <span>Exclude Out of Stock</span>
+            </label>
+        </div>
+
+        <!-- 4. Customer Guarantees -->
+        <div class="filter-group" style="border-bottom: none;">
+            <div class="filter-group-title">CERTIFIED BENEFITS</div>
+            <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.6;">
+                <div>🛡️ 2-Year Direct Warranty</div>
+                <div>🚚 Shock-Proof Tracked Freight</div>
+                <div>⚡ 7-Day Replacement Guarantee</div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Right Main Results Area -->
+    <main class="results-main-column">
+
+        <!-- Sort Bar & Applied Filters -->
+        <div class="sort-strip">
+            <div class="sort-options-group">
+                <span class="sort-label">Sort By</span>
+                <button type="button" class="sort-btn" ng-class="{'active': sortBy === 'relevance'}" ng-click="setSort('relevance')">Relevance</button>
+                <button type="button" class="sort-btn" ng-class="{'active': sortBy === 'price_asc'}" ng-click="setSort('price_asc')">Price &ndash; Low to High</button>
+                <button type="button" class="sort-btn" ng-class="{'active': sortBy === 'price_desc'}" ng-click="setSort('price_desc')">Price &ndash; High to Low</button>
+                <button type="button" class="sort-btn" ng-class="{'active': sortBy === 'name_asc'}" ng-click="setSort('name_asc')">Model Name</button>
+            </div>
+            <div class="results-count-text">
+                Showing <strong>{{ data.searchResults.length }}</strong> robotics hardware unit(s)
+            </div>
+        </div>
+
+        <!-- Applied Filter Chips -->
+        <div class="applied-chips-row" ng-if="filters.category !== 'All' || filters.priceRange !== 'all' || filters.inStockOnly">
+            <span style="font-size: 12px; color: var(--text-muted); font-weight: 600;">Active Filters:</span>
+            
+            <span class="filter-chip" ng-if="filters.category !== 'All'">
+                Category: {{ filters.category }}
+                <button type="button" class="chip-remove-btn" ng-click="setCategoryFilter('All')">&times;</button>
+            </span>
+
+            <span class="filter-chip" ng-if="filters.priceRange !== 'all'">
+                Price Filter Active
+                <button type="button" class="chip-remove-btn" ng-click="setPriceFilter('all')">&times;</button>
+            </span>
+
+            <span class="filter-chip" ng-if="filters.inStockOnly">
+                In Stock Only
+                <button type="button" class="chip-remove-btn" ng-click="toggleInStockFilter()">&times;</button>
+            </span>
+        </div>
+
+        <!-- Empty State -->
+        <div ng-if="data.searchResults.length === 0" style="background: var(--bg-card); border-radius: var(--radius-sm); border: 1px solid var(--border-light); padding: 48px 24px; text-align: center;">
+            <div style="font-size: 48px; margin-bottom: 12px;">🔍</div>
+            <h3 style="font-size: 18px; margin-bottom: 6px;">Sorry, no matching autonomous units found!</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 20px;">Try adjusting your filters or search keywords.</p>
+            <button type="button" class="btn btn-primary" ng-click="clearFilters();">Reset All Filters</button>
+        </div>
+
+        <!-- Flipkart-Style Dense Product List Cards -->
+        <div class="product-list-card" ng-repeat="item in data.searchResults">
+            <!-- Left: Media Box -->
+            <div class="list-card-media">
+                <a href="/product/{{ item.sku }}">
+                    <img ng-src="/images/{{ item.sku }}.png" alt="{{ item.name }}" class="list-card-img"/>
+                </a>
+                <label class="compare-checkbox-label" style="margin-top: 10px;">
+                    <input type="checkbox" ng-checked="isCompared(item.sku)" ng-click="toggleCompare(item, $event)"/>
+                    <span>Add to Compare</span>
+                </label>
+            </div>
+
+            <!-- Center: Technical Specs & Information -->
+            <div class="list-card-info">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <a href="/product/{{ item.sku }}" class="list-card-title">{{ item.name }}</a>
+                    <button type="button" 
+                            style="background: none; border: none; font-size: 16px; cursor: pointer; color: {{ isInWishlist(item.sku) ? '#E91E63' : 'var(--text-muted)' }};" 
+                            ng-click="toggleWishlist(item, $event);" 
+                            title="Toggle Wishlist">
+                        ♥
+                    </button>
+                </div>
+
+                <div class="rating-pill-wrap">
+                    <span class="rating-pill">4.5 ★</span>
+                    <span class="rating-count-text">(18 verified evaluations)</span>
+                    <span style="font-size: 11px; color: var(--text-muted);">&bull; SKU: {{ item.sku }}</span>
+                </div>
+
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">
+                    {{ item.description }}
+                </p>
+
+                <ul class="list-specs-list">
+                    <li><span>🧠</span> Compute: {{ getSpecs(item.sku).processor }}</li>
+                    <li><span>🔋</span> Power Cell: {{ getSpecs(item.sku).battery }}</li>
+                    <li><span>⚖️</span> Actuator Payload: {{ getSpecs(item.sku).payload }}</li>
+                    <li><span>🛡️</span> Protection Rating: {{ getSpecs(item.sku).rating }}</li>
+                    <li><span>📡</span> Comms Link: {{ getSpecs(item.sku).connectivity }}</li>
+                </ul>
+            </div>
+
+            <!-- Right: Pricing, Delivery & CTA -->
+            <div class="list-card-pricing">
+                <div style="margin-bottom: 8px;">
+                    <div style="font-size: 24px; font-weight: 800; color: var(--text-primary);">&euro;{{ item.price.toFixed(2) }}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">
+                        <span style="text-decoration: line-through;">&euro;{{ (item.price * 1.15).toFixed(2) }}</span>
+                        <strong style="color: var(--offer-green); margin-left: 6px;">15% off</strong>
+                    </div>
+                </div>
+
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                    <span style="color: var(--offer-green); font-weight: 700;">Free Delivery</span><br>
+                    <span>Dispatched in 24–48 Hours</span>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <span class="stock-badge stock-instock" ng-if="item.instock > 5">In Stock ({{ item.instock }} units)</span>
+                    <span class="stock-badge stock-limited" ng-if="item.instock > 0 && item.instock <= 5">Only {{ item.instock }} Left</span>
+                    <span class="stock-badge stock-out" ng-if="item.instock === 0">Currently Backordered</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: auto;">
+                    <a href="/product/{{ item.sku }}" class="btn btn-purchase btn-sm" style="width: 100%;">View Details &rarr;</a>
+                    <button type="button" 
+                            class="btn btn-deal btn-sm" 
+                            ng-click="quickAddToCart(item, $event);" 
+                            ng-disabled="item.instock === 0" 
+                            style="width: 100%;">
+                        {{ item.instock === 0 ? 'Waitlist' : 'Add to Cart' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+</div>

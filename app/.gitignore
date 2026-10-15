@@ -1,0 +1,136 @@
+# ==============================================================================
+# Terraform & OpenTofu
+# ==============================================================================
+# Local .terraform directories containing provider plugins and modules
+**/.terraform/*
+
+# Do not ignore .terraform.lock.hcl (recommended by HashiCorp to lock provider hashes)
+# Remove the exclamation mark if you prefer to exclude provider locks
+!**/.terraform.lock.hcl
+
+# State files (may contain sensitive plaintext secrets & credentials)
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Plan files
+*.tfplan
+*tfplan*
+
+# CLI configuration and override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Sensitive tfvars containing secrets / passwords
+# (Generic environment specs like dev.tfvars / prod.tfvars are kept tracked)
+*secret*.tfvars
+*secrets*.tfvars
+*.secret.tfvars
+local.tfvars
+
+# ==============================================================================
+# Environment Variables & Secrets
+# ==============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.cert
+*.crt
+*.pfx
+*.p12
+credentials.json
+aws_credentials
+
+# ==============================================================================
+# Application Builds & Dependencies (Node, Python, Go, Java)
+# ==============================================================================
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+
+# Go
+vendor/
+Gopkg.lock
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Java & Maven
+target/
+*.class
+
+# ==============================================================================
+# Containers & Helm
+# ==============================================================================
+.docker/
+*.tgz
+.helm/
+
+# ==============================================================================
+# OS & Editor Artifacts
+# ==============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editors
+.*.swp
+.*.swo
+*~
+*.bak
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+*-private.*

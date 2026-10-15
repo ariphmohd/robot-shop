@@ -1,0 +1,257 @@
+networks:
+  robot-shop:
+    driver: bridge
+
+services:
+  # ============================================================================
+  # Tier 3: Data Stores & Message Broker
+  # ============================================================================
+  mongodb:
+    build:
+      context: ./mongo
+    image: robot-shop-mongo:latest
+    container_name: rs-mongodb
+    networks:
+      - robot-shop
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:6.2-alpine
+    container_name: rs-redis
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    container_name: rs-rabbitmq
+    networks:
+      - robot-shop
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  mysql:
+    build:
+      context: ./mysql
+    image: robot-shop-mysql:latest
+    container_name: rs-mysql
+    cap_add:
+      - NET_ADMIN
+    networks:
+      - robot-shop
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ============================================================================
+  # Tier 2: Application Microservices
+  # ============================================================================
+  catalogue:
+    build:
+      context: ./catalogue
+    image: robot-shop-catalogue:latest
+    container_name: rs-catalogue
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      MONGO_URL: "mongodb://mongodb:27017/catalogue"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  user:
+    build:
+      context: ./user
+    image: robot-shop-user:latest
+    container_name: rs-user
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      MONGO_URL: "mongodb://mongodb:27017/users"
+      REDIS_HOST: "redis"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  cart:
+    build:
+      context: ./cart
+    image: robot-shop-cart:latest
+    container_name: rs-cart
+    depends_on:
+      redis:
+        condition: service_healthy
+      catalogue:
+        condition: service_healthy
+    environment:
+      REDIS_HOST: "redis"
+      CATALOGUE_HOST: "catalogue"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  shipping:
+    build:
+      context: ./shipping
+    image: robot-shop-shipping:latest
+    container_name: rs-shipping
+    depends_on:
+      mysql:
+        condition: service_healthy
+      cart:
+        condition: service_healthy
+    environment:
+      DB_HOST: "mysql"
+      CART_ENDPOINT: "cart:8080"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+
+  ratings:
+    build:
+      context: ./ratings
+    image: robot-shop-ratings:latest
+    container_name: rs-ratings
+    depends_on:
+      mysql:
+        condition: service_healthy
+      catalogue:
+        condition: service_healthy
+    environment:
+      PDO_URL: "mysql:host=mysql;dbname=ratings;charset=utf8mb4"
+      CATALOGUE_URL: "http://catalogue:8080"
+      APP_ENV: "prod"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/_health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  payment:
+    build:
+      context: ./payment
+    image: robot-shop-payment:latest
+    container_name: rs-payment
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      user:
+        condition: service_healthy
+      cart:
+        condition: service_healthy
+    environment:
+      AMQP_HOST: "rabbitmq"
+      USER_HOST: "user"
+      CART_HOST: "cart"
+      PAYMENT_GATEWAY: "https://paypal.com/"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  dispatch:
+    build:
+      context: ./dispatch
+    image: robot-shop-dispatch:latest
+    container_name: rs-dispatch
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      AMQP_HOST: "rabbitmq"
+      DISPATCH_ERROR_PERCENT: "0"
+    networks:
+      - robot-shop
+
+  # ============================================================================
+  # Tier 1: Presentation (Web Reverse Proxy & SPA)
+  # ============================================================================
+  web:
+    build:
+      context: ./web
+    image: robot-shop-web:latest
+    container_name: rs-web
+    depends_on:
+      catalogue:
+        condition: service_healthy
+      user:
+        condition: service_healthy
+      cart:
+        condition: service_healthy
+      shipping:
+        condition: service_healthy
+      ratings:
+        condition: service_healthy
+      payment:
+        condition: service_healthy
+    environment:
+      CATALOGUE_HOST: "catalogue"
+      USER_HOST: "user"
+      CART_HOST: "cart"
+      SHIPPING_HOST: "shipping"
+      PAYMENT_HOST: "payment"
+      RATINGS_HOST: "ratings"
+    ports:
+      - "8080:8080"
+    networks:
+      - robot-shop
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

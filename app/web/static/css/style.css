@@ -1,0 +1,1872 @@
+/* ==========================================================================
+   AriphMohd Robot Shop - Amazon Marketplace & AWS Console Design System
+   Compact, Information-Rich, High-Conversion, WCAG AA Compliant
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Design Tokens & Color Palette
+   -------------------------------------------------------------------------- */
+:root {
+    /* Amazon & AWS Marketplace Accents */
+    --header-navy: #131A22;
+    --subnav-navy: #232F3E;
+    --subnav-hover: #37475A;
+    --back-to-top-bg: #37475A;
+    --back-to-top-hover: #485769;
+
+    --accent-amber: #FFB300;
+    --accent-amber-hover: #F59E0B;
+    --accent-amber-border: #D97706;
+    --accent-orange: #FF9900;
+    --accent-orange-hover: #E47911;
+
+    --link-blue: #146EB4;
+    --link-blue-hover: #0B5C9E;
+
+    --color-success: #168342;
+    --color-warning: #E47911;
+    --color-danger: #C62828;
+    --color-rating-star: #FFA41C;
+
+    /* AWS Console Compact Typography */
+    --font-main: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-heading: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+
+    /* AWS Console Crisp Radii & Spacing (4px/6px system) */
+    --radius-xs: 3px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 8px;
+    --radius-pill: 9999px;
+
+    /* Micro-Transitions */
+    --transition-fast: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light Theme (Amazon / AWS Console Light) */
+[data-theme="light"], :root {
+    --bg-page: #F3F4F6;
+    --bg-card: #FFFFFF;
+    --bg-surface: #FFFFFF;
+    --bg-secondary: #F7F8FA;
+    --bg-elevated: #FFFFFF;
+    --bg-input: #FFFFFF;
+    --bg-img-box: #F7F8FA;
+    --table-zebra: #FAFAFA;
+
+    --text-primary: #161E2D;
+    --text-secondary: #5F6B7A;
+    --text-muted: #7D8998;
+    --text-inverse: #FFFFFF;
+
+    --border-color: #D5DBDB;
+    --border-light: #EAEDED;
+    --border-focus: #146EB4;
+
+    --badge-instock-bg: rgba(22, 131, 66, 0.1);
+    --badge-instock-text: #168342;
+    --badge-limited-bg: rgba(228, 121, 17, 0.12);
+    --badge-limited-text: #E47911;
+    --badge-out-bg: rgba(198, 40, 40, 0.1);
+    --badge-out-text: #C62828;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-hover: 0 4px 14px rgba(0, 0, 0, 0.1);
+    --shadow-dropdown: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+
+/* Dark Theme (AWS Console Dark Mode) */
+[data-theme="dark"] {
+    --bg-page: #0F141A;
+    --bg-card: #161D26;
+    --bg-surface: #161D26;
+    --bg-secondary: #1D2632;
+    --bg-elevated: #242E3D;
+    --bg-input: #1D2632;
+    --bg-img-box: #1A222D;
+    --table-zebra: #1A232E;
+
+    --text-primary: #F2F3F3;
+    --text-secondary: #C5C9D0;
+    --text-muted: #929AA5;
+    --text-inverse: #0F141A;
+
+    --border-color: #394452;
+    --border-light: #252F3C;
+    --border-focus: #7CC4FA;
+
+    --link-blue: #7CC4FA;
+    --link-blue-hover: #A5D8FC;
+
+    --badge-instock-bg: rgba(22, 131, 66, 0.25);
+    --badge-instock-text: #4ADE80;
+    --badge-limited-bg: rgba(228, 121, 17, 0.25);
+    --badge-limited-text: #FBBF24;
+    --badge-out-bg: rgba(198, 40, 40, 0.25);
+    --badge-out-text: #F87171;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.45);
+    --shadow-hover: 0 8px 24px rgba(0, 0, 0, 0.6);
+    --shadow-dropdown: 0 12px 32px rgba(0, 0, 0, 0.7);
+}
+
+/* --------------------------------------------------------------------------
+   2. Base Reset & AWS Console Typography
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    font-size: 14px;
+    line-height: 1.45;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent-amber);
+    outline-offset: 2px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    color: var(--text-primary);
+    line-height: 1.25;
+}
+
+h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }
+h2 { font-size: 22px; font-weight: 600; letter-spacing: -0.2px; }
+h3 { font-size: 17px; font-weight: 600; }
+h4 { font-size: 14px; font-weight: 600; }
+
+a {
+    color: var(--link-blue);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+a:hover {
+    color: var(--link-blue-hover);
+    text-decoration: underline;
+}
+
+.container {
+    max-width: 1400px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* --------------------------------------------------------------------------
+   3. Amazon-Style Two-Tier Sticky Header
+   -------------------------------------------------------------------------- */
+.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Tier 1: Main Header Row (Navy #131A22) */
+.header-main-row {
+    background-color: var(--header-navy);
+    color: #FFFFFF;
+    padding: 8px 0;
+}
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    min-height: 52px;
+}
+
+/* Brand Link */
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: #FFFFFF;
+    flex-shrink: 0;
+    padding: 4px 8px;
+    border-radius: var(--radius-xs);
+    border: 1px solid transparent;
+}
+.brand-link:hover {
+    text-decoration: none;
+    border-color: #FFFFFF;
+}
+.brand-logo {
+    width: 34px;
+    height: 34px;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+.brand-title-wrap {
+    display: flex;
+    flex-direction: column;
+}
+.brand-name {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: #FFFFFF;
+    line-height: 1.1;
+}
+.brand-subtitle {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--accent-amber);
+    text-transform: uppercase;
+}
+
+/* Deliver-to Location Widget */
+.header-deliver-to {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: var(--radius-xs);
+    cursor: default;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+}
+.header-deliver-to:hover {
+    border-color: #FFFFFF;
+}
+.deliver-icon {
+    font-size: 16px;
+    color: var(--accent-amber);
+}
+.deliver-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+}
+.deliver-label {
+    font-size: 11px;
+    color: #CCCCCC;
+}
+.deliver-location {
+    font-size: 13px;
+    font-weight: 700;
+    color: #FFFFFF;
+}
+
+/* Large Prominent Central Search Bar */
+.search-container {
+    flex: 1;
+    max-width: 720px;
+    position: relative;
+}
+.search-form {
+    display: flex;
+    align-items: center;
+    background: #FFFFFF;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    height: 40px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    border: 2px solid transparent;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.search-form:focus-within {
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.4);
+}
+.search-category-dropdown {
+    background: #F3F3F3;
+    color: #555555;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 0 10px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid #DDDDDD;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+}
+.search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    padding: 0 12px;
+    font-size: 14px;
+    color: #111827;
+    background: transparent;
+    height: 100%;
+    font-family: inherit;
+}
+.search-input::placeholder {
+    color: #718096;
+}
+.search-btn {
+    background: var(--accent-amber);
+    border: none;
+    padding: 0 16px;
+    height: 100%;
+    color: #111827;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color var(--transition-fast);
+    flex-shrink: 0;
+}
+.search-btn:hover {
+    background: var(--accent-amber-hover);
+}
+
+/* Search Autocomplete */
+.search-suggestions-dropdown {
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xs);
+    box-shadow: var(--shadow-dropdown);
+    z-index: 1100;
+    max-height: 380px;
+    overflow-y: auto;
+}
+.suggestion-group-title {
+    padding: 8px 14px 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+}
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    font-size: 13.5px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    text-decoration: none;
+}
+.suggestion-item:hover {
+    background: var(--bg-secondary);
+    color: var(--link-blue);
+    text-decoration: none;
+}
+.suggestion-icon {
+    font-size: 14px;
+    opacity: 0.6;
+}
+
+/* Header Nav Items */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.nav-action-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: #FFFFFF;
+    text-decoration: none;
+    padding: 5px 8px;
+    border-radius: var(--radius-xs);
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    line-height: 1.2;
+    transition: border-color var(--transition-fast);
+}
+.nav-action-item:hover {
+    border-color: #FFFFFF;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+.nav-line-1 {
+    font-size: 11px;
+    color: #CCCCCC;
+    white-space: nowrap;
+}
+.nav-line-2 {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: #FFFFFF;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Cart Item with Yellow Badge */
+.nav-cart-item {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+.cart-icon-wrap {
+    position: relative;
+    font-size: 20px;
+    line-height: 1;
+}
+.cart-count-badge {
+    position: absolute;
+    top: -8px;
+    right: -10px;
+    background: var(--accent-amber);
+    color: #111827;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    min-width: 18px;
+    text-align: center;
+}
+.badge-count {
+    background: var(--accent-amber);
+    color: #111827;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    min-width: 16px;
+    text-align: center;
+    margin-left: 2px;
+}
+
+/* Theme Switcher */
+.theme-switch-container {
+    position: relative;
+}
+.theme-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xs);
+    box-shadow: var(--shadow-dropdown);
+    padding: 4px;
+    min-width: 140px;
+    z-index: 1050;
+    display: none;
+    flex-direction: column;
+}
+.theme-dropdown.show {
+    display: flex;
+}
+.theme-opt-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xs);
+    color: var(--text-primary);
+    font-size: 13px;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+.theme-opt-btn:hover {
+    background: var(--bg-secondary);
+}
+.theme-opt-btn.active {
+    background: rgba(255, 179, 0, 0.15);
+    color: var(--accent-amber-border);
+    font-weight: 700;
+}
+
+/* Tier 2: Secondary Navigation Bar (Navy #232F3E) */
+.category-nav-strip {
+    background-color: var(--subnav-navy);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.category-strip-inner {
+    display: flex;
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0 10px;
+    min-height: 38px;
+}
+.category-strip-inner::-webkit-scrollbar {
+    display: none;
+}
+.category-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #FFFFFF;
+    white-space: nowrap;
+    border: 1px solid transparent;
+    border-radius: var(--radius-xs);
+    transition: border-color var(--transition-fast);
+    cursor: pointer;
+    text-decoration: none;
+}
+.category-nav-item:hover {
+    border-color: #FFFFFF;
+    color: #FFFFFF;
+    text-decoration: none;
+}
+.category-nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   4. Buttons & Controls (AWS Console Precision)
+   -------------------------------------------------------------------------- */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    line-height: 1.25;
+    height: 36px;
+}
+.btn:hover {
+    text-decoration: none;
+}
+.btn:active {
+    transform: translateY(1px);
+}
+.btn[disabled] {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Amazon Amber Primary (Add to Cart) */
+.btn-primary, .btn-cart, .btn-deal {
+    background: var(--accent-amber);
+    color: #111827;
+    border-color: var(--accent-amber-border);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.btn-primary:hover, .btn-cart:hover, .btn-deal:hover {
+    background: var(--accent-amber-hover);
+    color: #111827;
+}
+
+/* Amazon Orange Purchase CTA (Buy Now) */
+.btn-purchase, .btn-buy {
+    background: var(--accent-orange);
+    color: #111827;
+    border-color: var(--accent-orange-hover);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    font-weight: 700;
+}
+.btn-purchase:hover, .btn-buy:hover {
+    background: var(--accent-orange-hover);
+    color: #FFFFFF;
+}
+
+/* AWS Console Neutral Secondary Button */
+.btn-secondary {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
+}
+.btn-secondary:hover {
+    background: var(--bg-secondary);
+    border-color: #8491A3;
+    color: var(--text-primary);
+}
+
+.btn-sm {
+    height: 30px;
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: var(--radius-xs);
+}
+.btn-lg {
+    height: 42px;
+    padding: 10px 22px;
+    font-size: 14.5px;
+    border-radius: var(--radius-sm);
+}
+
+/* --------------------------------------------------------------------------
+   5. Homepage Layout (Amazon Marketplace Panels)
+   -------------------------------------------------------------------------- */
+.homepage-content {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 16px 0 40px;
+}
+
+/* Promotional Hero Panel */
+.promo-carousel-container {
+    position: relative;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    height: 300px;
+    border: 1px solid var(--border-color);
+}
+.promo-slide {
+    display: none;
+    height: 100%;
+    align-items: center;
+    padding: 0 40px;
+}
+.promo-slide.active {
+    display: flex;
+}
+.promo-slide-content {
+    max-width: 560px;
+    z-index: 2;
+}
+.promo-pill {
+    display: inline-block;
+    background: #FEBD69;
+    color: #111827;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: var(--radius-xs);
+    margin-bottom: 10px;
+}
+.promo-title {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+.promo-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.45;
+    margin-bottom: 18px;
+}
+.promo-img-wrap {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    height: 100%;
+}
+.promo-robot-img {
+    max-height: 240px;
+    max-width: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.15));
+    transition: transform var(--transition-normal);
+}
+.promo-slide:hover .promo-robot-img {
+    transform: scale(1.03);
+}
+
+/* Carousel Buttons */
+.carousel-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 72px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: var(--text-primary);
+    cursor: pointer;
+    z-index: 5;
+    border-radius: 0 var(--radius-xs) var(--radius-xs) 0;
+    transition: all var(--transition-fast);
+}
+[data-theme="dark"] .carousel-nav-btn {
+    background: rgba(29, 38, 50, 0.9);
+}
+.carousel-nav-btn.next {
+    right: 0;
+    border-radius: var(--radius-xs) 0 0 var(--radius-xs);
+}
+.carousel-nav-btn:hover {
+    background: #FFFFFF;
+    color: var(--link-blue);
+}
+[data-theme="dark"] .carousel-nav-btn:hover {
+    background: #242E3D;
+}
+.carousel-dots {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 5;
+}
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+[data-theme="dark"] .carousel-dot {
+    background: rgba(255, 255, 255, 0.3);
+}
+.carousel-dot.active {
+    background: var(--accent-amber);
+    width: 20px;
+    border-radius: 4px;
+}
+
+/* Trust & Service Strip (AWS Console Card Row) */
+.trust-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 16px 20px;
+    gap: 16px;
+}
+.trust-strip-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.trust-strip-icon {
+    font-size: 24px;
+    color: var(--accent-orange);
+    flex-shrink: 0;
+}
+.trust-strip-title {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.trust-strip-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Marketplace Section Panels */
+.marketplace-section {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-color);
+    padding: 18px 20px;
+    overflow: hidden;
+}
+.section-banner-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: 16px;
+}
+.section-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+.marketplace-section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.section-timer-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+.section-timer-badge span {
+    color: var(--color-warning);
+}
+
+/* Product Rail Grid */
+.product-rail {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   6. Amazon-Style Product Card
+   -------------------------------------------------------------------------- */
+.product-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: #A0AEC0;
+}
+
+/* Wishlist Toggle Heart */
+.wishlist-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 10;
+    font-size: 15px;
+    color: var(--text-muted);
+    box-shadow: var(--shadow-xs);
+    transition: all var(--transition-fast);
+}
+.wishlist-toggle-btn:hover {
+    transform: scale(1.1);
+    color: var(--color-danger);
+}
+.wishlist-toggle-btn.active {
+    color: var(--color-danger);
+    background: rgba(198, 40, 40, 0.1);
+    border-color: rgba(198, 40, 40, 0.3);
+}
+
+/* Product Card Image Container */
+.product-img-box {
+    height: 175px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    padding: 8px;
+    background: var(--bg-img-box);
+    border-radius: var(--radius-sm);
+    position: relative;
+}
+.product-img-box img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform var(--transition-normal);
+}
+.product-card:hover .product-img-box img {
+    transform: scale(1.03);
+}
+
+/* Stock Status Badge */
+.stock-badge {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: var(--radius-xs);
+    line-height: 1.2;
+}
+.stock-instock {
+    background: var(--badge-instock-bg);
+    color: var(--badge-instock-text);
+}
+.stock-limited {
+    background: var(--badge-limited-bg);
+    color: var(--badge-limited-text);
+}
+.stock-out {
+    background: var(--badge-out-bg);
+    color: var(--badge-out-text);
+}
+
+/* Product Title (2-Line Clamp) */
+.product-name-link {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.35;
+    margin-bottom: 6px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 40px;
+}
+.product-name-link:hover {
+    color: var(--link-blue);
+    text-decoration: underline;
+}
+
+/* Star Rating Row (Amazon Amber Stars) */
+.rating-pill-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-size: 12.5px;
+}
+.rating-pill {
+    color: var(--color-rating-star);
+    font-weight: 700;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.rating-count-text {
+    color: var(--link-blue);
+    font-size: 12px;
+}
+.rating-count-text:hover {
+    text-decoration: underline;
+}
+
+/* Price Block (Amazon Tabular Hierarchy) */
+.price-block {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.current-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+.original-price {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-decoration: line-through;
+    font-variant-numeric: tabular-nums;
+}
+.discount-tag {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-success);
+}
+
+/* Delivery Tag */
+.delivery-tag {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.delivery-tag strong {
+    color: var(--text-primary);
+}
+
+/* Card Actions Strip */
+.card-actions-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-light);
+    gap: 8px;
+}
+.compare-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+}
+.compare-checkbox-label input[type="checkbox"] {
+    accent-color: var(--accent-orange);
+}
+
+/* --------------------------------------------------------------------------
+   7. Product Listing & Search Results (AWS Console Density)
+   -------------------------------------------------------------------------- */
+.search-results-layout {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 20px;
+    padding: 16px 0 40px;
+    align-items: start;
+}
+
+/* Left Filter Sidebar */
+.filter-sidebar {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    position: sticky;
+    top: 104px;
+}
+.filter-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+.filter-title {
+    font-size: 14px;
+    font-weight: 700;
+}
+.clear-filters-btn {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--link-blue);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+.clear-filters-btn:hover {
+    text-decoration: underline;
+}
+.filter-group {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+}
+.filter-group-title {
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+.filter-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+    font-size: 13px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.filter-option input[type="checkbox"], .filter-option input[type="radio"] {
+    accent-color: var(--accent-orange);
+}
+
+/* Results Main Area */
+.results-main-column {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Sort Bar */
+.sort-strip {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.sort-options-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.sort-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-muted);
+    margin-right: 4px;
+}
+.sort-btn {
+    background: none;
+    border: none;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-xs);
+    transition: all var(--transition-fast);
+}
+.sort-btn:hover {
+    color: var(--link-blue);
+}
+.sort-btn.active {
+    color: var(--text-primary);
+    font-weight: 700;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+.results-count-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Applied Filter Chips */
+.applied-chips-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.filter-chip {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px 10px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
+}
+.chip-remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+}
+.chip-remove-btn:hover {
+    color: var(--color-danger);
+}
+
+/* Dense Marketplace List Card */
+.product-list-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    padding: 18px;
+    display: grid;
+    grid-template-columns: 190px 1fr 220px;
+    gap: 20px;
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+.product-list-card:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: #A0AEC0;
+}
+.list-card-media {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+.list-card-img {
+    max-height: 150px;
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform var(--transition-normal);
+}
+.product-list-card:hover .list-card-img {
+    transform: scale(1.03);
+}
+.list-card-info {
+    display: flex;
+    flex-direction: column;
+}
+.list-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+.list-specs-list {
+    list-style: none;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.list-specs-list li {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.list-card-pricing {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    padding-left: 18px;
+    border-left: 1px solid var(--border-light);
+}
+
+/* --------------------------------------------------------------------------
+   8. Product Detail Page (PDP)
+   -------------------------------------------------------------------------- */
+.pdp-container {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-color);
+    margin: 16px 0 40px;
+    padding: 24px;
+}
+.pdp-layout {
+    display: grid;
+    grid-template-columns: 440px 1fr;
+    gap: 36px;
+    align-items: start;
+}
+
+/* Sticky Image Gallery */
+.pdp-sticky-gallery {
+    position: sticky;
+    top: 104px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+.pdp-gallery-main {
+    height: 380px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    background: var(--bg-img-box);
+}
+.pdp-gallery-main img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+.pdp-gallery-main:hover img {
+    transform: scale(1.06);
+}
+.pdp-thumbnails-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+.pdp-thumb-btn {
+    width: 64px;
+    height: 64px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-img-box);
+    padding: 4px;
+    cursor: pointer;
+    transition: border-color var(--transition-fast);
+}
+.pdp-thumb-btn.active, .pdp-thumb-btn:hover {
+    border-color: var(--accent-amber-border);
+    box-shadow: 0 0 0 2px rgba(255, 179, 0, 0.4);
+}
+.pdp-thumb-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* PDP Right Column (Product Information) */
+.pdp-info-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Breadcrumbs */
+.breadcrumb-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.breadcrumb-nav a {
+    color: var(--link-blue);
+}
+.breadcrumb-nav a:hover {
+    text-decoration: underline;
+}
+
+.pdp-title {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--text-primary);
+}
+
+/* Price Box */
+.pdp-price-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+}
+
+/* Available Offers Box */
+.pdp-offers-box {
+    background: var(--bg-secondary);
+    border: 1px dashed var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 14px 18px;
+}
+.offers-box-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.offer-item {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.offer-badge {
+    color: var(--color-success);
+    font-weight: 700;
+    font-size: 11px;
+}
+
+/* Pincode Checker */
+.pincode-checker-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 12px 0;
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+}
+.pincode-input {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    background: var(--bg-input);
+    color: var(--text-primary);
+    width: 160px;
+    height: 36px;
+}
+
+/* AWS Console-Style Key-Value Specifications Table */
+.specs-table-container {
+    margin-top: 12px;
+}
+.specs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+.specs-table tr {
+    border-bottom: 1px solid var(--border-color);
+}
+.specs-table tr:nth-child(even) {
+    background: var(--table-zebra);
+}
+.specs-table td {
+    padding: 9px 14px;
+}
+.specs-table td.spec-key {
+    width: 32%;
+    color: var(--text-muted);
+    font-weight: 600;
+    border-right: 1px solid var(--border-color);
+}
+.specs-table td.spec-val {
+    color: var(--text-primary);
+}
+
+/* Dual PDP Action Buttons */
+.pdp-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 6px;
+}
+.pdp-actions-row .btn {
+    height: 42px;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   9. Amazon-Style Shopping Cart
+   -------------------------------------------------------------------------- */
+.cart-layout {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+    padding: 16px 0 40px;
+    align-items: start;
+}
+.cart-items-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-color);
+}
+.cart-card-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.cart-item-row {
+    display: grid;
+    grid-template-columns: 110px 1fr 130px;
+    gap: 18px;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-light);
+}
+.cart-item-img {
+    max-height: 90px;
+    max-width: 100%;
+    object-fit: contain;
+}
+
+/* Quantity Stepper (AWS Console compact style) */
+.qty-stepper {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xs);
+    overflow: hidden;
+    margin-top: 8px;
+    height: 28px;
+}
+.qty-stepper-btn {
+    width: 26px;
+    height: 100%;
+    background: var(--bg-secondary);
+    border: none;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.qty-stepper-btn:hover {
+    background: #E2E8F0;
+}
+[data-theme="dark"] .qty-stepper-btn:hover {
+    background: #2D3748;
+}
+.qty-stepper-input {
+    width: 32px;
+    height: 100%;
+    text-align: center;
+    border: none;
+    border-left: 1px solid var(--border-color);
+    border-right: 1px solid var(--border-color);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 13px;
+}
+
+/* Sticky Order Summary Card */
+.price-details-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-color);
+    position: sticky;
+    top: 104px;
+}
+.price-details-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-light);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.price-breakdown-body {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 13.5px;
+}
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.price-row.total-row {
+    border-top: 1px dashed var(--border-color);
+    border-bottom: 1px dashed var(--border-color);
+    padding: 12px 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+.savings-banner {
+    padding: 10px 18px;
+    background: rgba(22, 131, 66, 0.1);
+    color: var(--color-success);
+    font-size: 12.5px;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   10. Multi-Step Checkout (AWS Console Style)
+   -------------------------------------------------------------------------- */
+.auth-wrapper {
+    max-width: 860px;
+    margin: 20px auto 40px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+.auth-grid {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+}
+.auth-sidebar {
+    background: var(--header-navy);
+    color: #FFFFFF;
+    padding: 32px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.auth-main-pane {
+    padding: 32px;
+    background: var(--bg-card);
+}
+.form-group {
+    margin-bottom: 14px;
+}
+.form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+}
+.form-control {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13.5px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    height: 38px;
+    font-family: inherit;
+}
+.form-control:focus {
+    border-color: var(--accent-orange);
+    box-shadow: 0 0 0 2px rgba(255, 153, 0, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   11. Product Comparison Matrix Modal & Floating Dock
+   -------------------------------------------------------------------------- */
+.compare-modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.compare-modal-window {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-dropdown);
+    width: 100%;
+    max-width: 1100px;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+}
+.compare-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-light);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-secondary);
+}
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.compare-table th, .compare-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-light);
+    border-right: 1px solid var(--border-light);
+    vertical-align: top;
+    text-align: left;
+    font-size: 13px;
+}
+.compare-table th:first-child, .compare-table td:first-child {
+    background: var(--bg-secondary);
+    font-weight: 700;
+    width: 200px;
+}
+.compare-floating-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--header-navy);
+    color: #FFFFFF;
+    padding: 10px 24px;
+    z-index: 990;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.25);
+    border-top: 1px solid #37475A;
+}
+
+/* --------------------------------------------------------------------------
+   12. Amazon-Style Multi-Tier Footer
+   -------------------------------------------------------------------------- */
+.app-footer {
+    background-color: var(--subnav-navy);
+    color: #DDDDDD;
+    margin-top: auto;
+    font-size: 12.5px;
+}
+.back-to-top {
+    background-color: var(--back-to-top-bg);
+    color: #FFFFFF;
+    text-align: center;
+    padding: 12px 0;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+}
+.back-to-top:hover {
+    background-color: var(--back-to-top-hover);
+}
+.footer-main-grid {
+    padding: 40px 0 24px;
+}
+.footer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr) 1.2fr;
+    gap: 28px;
+    margin-bottom: 32px;
+}
+.footer-col h4 {
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+.footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.footer-links a {
+    color: #CCCCCC;
+    font-size: 12.5px;
+}
+.footer-links a:hover {
+    color: #FFFFFF;
+    text-decoration: underline;
+}
+.footer-bottom-bar {
+    background-color: var(--header-navy);
+    padding: 18px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 12px;
+    color: #999999;
+}
+.footer-bottom-inner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   13. Responsive Breakpoints & Accessibility
+   -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+    .pdp-layout {
+        grid-template-columns: 1fr;
+    }
+    .pdp-sticky-gallery {
+        position: static;
+    }
+    .search-results-layout {
+        grid-template-columns: 1fr;
+    }
+    .filter-sidebar {
+        position: static;
+    }
+    .cart-layout {
+        grid-template-columns: 1fr;
+    }
+    .price-details-card {
+        position: static;
+    }
+    .footer-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .header-inner {
+        flex-wrap: wrap;
+        padding: 8px 0;
+    }
+    .header-deliver-to {
+        display: none;
+    }
+    .search-container {
+        order: 3;
+        max-width: 100%;
+        width: 100%;
+    }
+    .trust-strip {
+        grid-template-columns: 1fr 1fr;
+    }
+    .product-list-card {
+        grid-template-columns: 1fr;
+    }
+    .list-card-pricing {
+        border-left: none;
+        padding-left: 0;
+        border-top: 1px solid var(--border-light);
+        padding-top: 12px;
+    }
+    .auth-grid {
+        grid-template-columns: 1fr;
+    }
+    .auth-sidebar {
+        display: none;
+    }
+    .promo-carousel-container {
+        height: 360px;
+    }
+    .promo-slide {
+        flex-direction: column-reverse;
+        padding: 16px;
+        text-align: center;
+    }
+    .promo-img-wrap {
+        justify-content: center;
+    }
+    .promo-robot-img {
+        max-height: 150px;
+    }
+}
+
+@media (max-width: 480px) {
+    .trust-strip {
+        grid-template-columns: 1fr;
+    }
+    .footer-grid {
+        grid-template-columns: 1fr;
+    }
+    .product-rail {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

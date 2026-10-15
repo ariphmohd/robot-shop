@@ -1,0 +1,267 @@
+<!-- ==========================================================================
+     AriphMohd Robot Shop - Flipkart-Inspired Marketplace Homepage
+     ========================================================================== -->
+<div class="homepage-content">
+
+    <!-- 1. Hero Promotional Carousel Banner -->
+    <div class="promo-carousel-container" aria-label="Featured Promotions">
+        <div class="promo-slide" 
+             ng-repeat="slide in slides" 
+             ng-class="{'active': $index === currentSlide}">
+            <div class="promo-slide-content">
+                <span class="promo-pill">{{ slide.badge }}</span>
+                <h1 class="promo-title">{{ slide.title }}</h1>
+                <p class="promo-subtitle">{{ slide.subtitle }}</p>
+                <div style="display: flex; align-items: baseline; gap: 12px; margin-bottom: 20px;">
+                    <span style="font-size: 26px; font-weight: 800; color: var(--text-primary);">{{ slide.price }}</span>
+                    <span style="font-size: 13px; color: var(--offer-green); font-weight: 700;">{{ slide.offer }}</span>
+                </div>
+                <div style="display: flex; gap: 12px;">
+                    <a ng-href="{{ slide.link }}" class="btn btn-purchase btn-lg">Explore Robot Specs &rarr;</a>
+                    <a href="/search" class="btn btn-secondary btn-lg">Browse Fleet</a>
+                </div>
+            </div>
+            <div class="promo-img-wrap">
+                <img ng-src="{{ slide.image }}" alt="{{ slide.title }}" class="promo-robot-img"/>
+            </div>
+        </div>
+
+        <!-- Slider Controls -->
+        <button type="button" class="carousel-nav-btn prev" ng-click="prevSlide();" aria-label="Previous Slide">&lsaquo;</button>
+        <button type="button" class="carousel-nav-btn next" ng-click="nextSlide();" aria-label="Next Slide">&rsaquo;</button>
+
+        <!-- Slider Pagination Dots -->
+        <div class="carousel-dots">
+            <span class="carousel-dot" 
+                  ng-repeat="slide in slides" 
+                  ng-class="{'active': $index === currentSlide}" 
+                  ng-click="goToSlide($index);"></span>
+        </div>
+    </div>
+
+    <!-- 2. Trust & Value Proposition Strip -->
+    <div class="trust-strip" aria-label="Marketplace Guarantees">
+        <div class="trust-strip-item">
+            <span class="trust-strip-icon">🛡️</span>
+            <div>
+                <div class="trust-strip-title">2-Year Full Warranty</div>
+                <div class="trust-strip-desc">Comprehensive parts &amp; actuator coverage</div>
+            </div>
+        </div>
+        <div class="trust-strip-item">
+            <span class="trust-strip-icon">🚚</span>
+            <div>
+                <div class="trust-strip-title">Express Shock Freight</div>
+                <div class="trust-strip-desc">Tracked logistics with calibrated sensors</div>
+            </div>
+        </div>
+        <div class="trust-strip-item">
+            <span class="trust-strip-icon">🔄</span>
+            <div>
+                <div class="trust-strip-title">7-Day Replacement</div>
+                <div class="trust-strip-desc">Guaranteed exchange on hardware defects</div>
+            </div>
+        </div>
+        <div class="trust-strip-item">
+            <span class="trust-strip-icon">💳</span>
+            <div>
+                <div class="trust-strip-title">PCI-DSS Safe Checkout</div>
+                <div class="trust-strip-desc">Encrypted transactional AMQP queue</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Deals of the Day Rail -->
+    <section class="marketplace-section">
+        <div class="section-banner-header">
+            <div class="section-header-left">
+                <h2 class="marketplace-section-title">Deals of the Day</h2>
+                <div class="section-timer-badge">
+                    <span>⏱️</span> Ending in 18h : 35m : 40s
+                </div>
+            </div>
+            <a href="/search" class="btn btn-primary btn-sm">VIEW ALL DEALS &rarr;</a>
+        </div>
+
+        <div class="product-rail">
+            <div class="product-card" ng-repeat="prod in data.allProducts | limitTo:5">
+                <!-- Wishlist Toggle -->
+                <button type="button" 
+                        class="wishlist-toggle-btn" 
+                        ng-class="{'active': isInWishlist(prod.sku)}" 
+                        ng-click="toggleWishlist(prod, $event);" 
+                        title="{{ isInWishlist(prod.sku) ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
+                    ♥
+                </button>
+
+                <!-- Product Image -->
+                <div class="product-img-box">
+                    <a href="/product/{{ prod.sku }}">
+                        <img ng-src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}"/>
+                    </a>
+                    <span class="stock-badge stock-instock" ng-if="prod.instock > 5">In Stock</span>
+                    <span class="stock-badge stock-limited" ng-if="prod.instock > 0 && prod.instock <= 5">Only {{ prod.instock }} Left</span>
+                    <span class="stock-badge stock-out" ng-if="prod.instock === 0">Out of Stock</span>
+                </div>
+
+                <!-- Product Meta -->
+                <a href="/product/{{ prod.sku }}" class="product-name-link" title="{{ prod.name }}: {{ prod.description }}">
+                    {{ prod.name }} - {{ prod.description }}
+                </a>
+
+                <!-- Rating Pill -->
+                <div class="rating-pill-wrap">
+                    <span class="rating-pill">4.5 ★</span>
+                    <span class="rating-count-text">(18)</span>
+                </div>
+
+                <!-- Price Block with Simulated Original Price -->
+                <div class="price-block">
+                    <span class="current-price">&euro;{{ prod.price.toFixed(2) }}</span>
+                    <span class="original-price">&euro;{{ (prod.price * 1.15).toFixed(2) }}</span>
+                    <span class="discount-tag">15% off</span>
+                </div>
+
+                <div class="delivery-tag">
+                    <span>🚚 <strong>Free delivery</strong></span>
+                </div>
+
+                <!-- Card Actions Strip -->
+                <div class="card-actions-strip">
+                    <label class="compare-checkbox-label">
+                        <input type="checkbox" ng-checked="isCompared(prod.sku)" ng-click="toggleCompare(prod, $event)"/>
+                        <span>Compare</span>
+                    </label>
+                    <button type="button" 
+                            class="btn btn-deal btn-sm" 
+                            ng-click="quickAddToCart(prod, $event);" 
+                            ng-disabled="prod.instock === 0">
+                        {{ prod.instock === 0 ? 'Waitlist' : '+ Cart' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. Featured Robot Fleet (High Density Catalog Grid) -->
+    <section class="marketplace-section" id="featured-robots">
+        <div class="section-banner-header">
+            <div class="section-header-left">
+                <h2 class="marketplace-section-title">Best Sellers in Autonomous Robotics</h2>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-secondary btn-sm" ng-click="filterCategory('All')" ng-class="{'btn-primary': selectedCategory === 'All'}">All Models</button>
+                <button type="button" class="btn btn-secondary btn-sm" ng-click="filterCategory('Artificial Intelligence')" ng-class="{'btn-primary': selectedCategory === 'Artificial Intelligence'}">Cognitive AI</button>
+                <button type="button" class="btn btn-secondary btn-sm" ng-click="filterCategory('Robot')" ng-class="{'btn-primary': selectedCategory === 'Robot'}">Field Robots</button>
+            </div>
+        </div>
+
+        <div class="product-rail">
+            <div class="product-card" ng-repeat="prod in data.allProducts | filter:categoryFilter">
+                <!-- Wishlist Toggle -->
+                <button type="button" 
+                        class="wishlist-toggle-btn" 
+                        ng-class="{'active': isInWishlist(prod.sku)}" 
+                        ng-click="toggleWishlist(prod, $event);" 
+                        title="{{ isInWishlist(prod.sku) ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
+                    ♥
+                </button>
+
+                <!-- Product Image -->
+                <div class="product-img-box">
+                    <a href="/product/{{ prod.sku }}">
+                        <img ng-src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}"/>
+                    </a>
+                    <span class="stock-badge stock-instock" ng-if="prod.instock > 5">In Stock</span>
+                    <span class="stock-badge stock-limited" ng-if="prod.instock > 0 && prod.instock <= 5">Only {{ prod.instock }} Left</span>
+                    <span class="stock-badge stock-out" ng-if="prod.instock === 0">Backorder</span>
+                </div>
+
+                <!-- Product Title -->
+                <a href="/product/{{ prod.sku }}" class="product-name-link" title="{{ prod.name }}: {{ prod.description }}">
+                    {{ prod.name }} &bull; {{ prod.description }}
+                </a>
+
+                <!-- Rating Pill -->
+                <div class="rating-pill-wrap">
+                    <span class="rating-pill">4.4 ★</span>
+                    <span class="rating-count-text">({{ 10 + $index * 3 }})</span>
+                </div>
+
+                <!-- Price Block -->
+                <div class="price-block">
+                    <span class="current-price">&euro;{{ prod.price.toFixed(2) }}</span>
+                    <span class="original-price">&euro;{{ (prod.price * 1.12).toFixed(2) }}</span>
+                    <span class="discount-tag">12% off</span>
+                </div>
+
+                <div class="delivery-tag">
+                    <span>🚚 <strong>Free delivery</strong> &bull; 2-Year Warranty</span>
+                </div>
+
+                <!-- Card Actions Strip -->
+                <div class="card-actions-strip">
+                    <label class="compare-checkbox-label">
+                        <input type="checkbox" ng-checked="isCompared(prod.sku)" ng-click="toggleCompare(prod, $event)"/>
+                        <span>Compare</span>
+                    </label>
+                    <button type="button" 
+                            class="btn btn-deal btn-sm" 
+                            ng-click="quickAddToCart(prod, $event);" 
+                            ng-disabled="prod.instock === 0">
+                        {{ prod.instock === 0 ? 'Waitlist' : '+ Cart' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Shop by Operating Theater & Environments -->
+    <section class="marketplace-section" id="environments">
+        <div class="section-banner-header">
+            <div>
+                <h2 class="marketplace-section-title">Shop by Operating Theater</h2>
+                <p style="color: var(--text-muted); font-size: 13px; margin-top: 2px;">Deploy robots certified for rigorous environmental constraints.</p>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 8px;">
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 28px;">🏥</div>
+                <h3 style="font-size: 16px; font-weight: 700;">Medical &amp; Surgery</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; flex: 1;">
+                    Sub-millimeter precision, tremor dampening, and Class 100 cleanroom sterilization. Unit: <strong>EMM</strong>.
+                </p>
+                <a href="/product/EMM" class="btn btn-secondary btn-sm" style="margin-top: 6px;">Inspect Clinical Units &rarr;</a>
+            </div>
+
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 28px;">🌾</div>
+                <h3 style="font-size: 16px; font-weight: 700;">Planetary Agriculture</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; flex: 1;">
+                    Multispectral crop surveying, 850kg capacity bin, and IP68 submersible seals. Unit: <strong>UHJ</strong>.
+                </p>
+                <a href="/product/UHJ" class="btn btn-secondary btn-sm" style="margin-top: 6px;">Inspect Harvesters &rarr;</a>
+            </div>
+
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 28px;">🛡️</div>
+                <h3 style="font-size: 16px; font-weight: 700;">Security &amp; Tactical</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; flex: 1;">
+                    Tactical DSP threat assessment, 72h endurance, and IP67 ballistic composites. Unit: <strong>RED</strong>.
+                </p>
+                <a href="/product/RED" class="btn btn-secondary btn-sm" style="margin-top: 6px;">Inspect Tactical Units &rarr;</a>
+            </div>
+
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+                <div style="font-size: 28px;">🚀</div>
+                <h3 style="font-size: 16px; font-weight: 700;">Deep-Space Roaming</h3>
+                <p style="color: var(--text-secondary); font-size: 13px; line-height: 1.5; flex: 1;">
+                    Radiation-hardened astro-navigation ASIC with deep-space microwave RF telemetry. Unit: <strong>HPTD</strong>.
+                </p>
+                <a href="/product/HPTD" class="btn btn-secondary btn-sm" style="margin-top: 6px;">Inspect Space Rovers &rarr;</a>
+            </div>
+        </div>
+    </section>
+
+</div>
