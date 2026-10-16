@@ -70,6 +70,12 @@ variable "github_branch" {
   default     = "main"
 }
 
+variable "github_oidc_subject" {
+  description = "Exact GitHub Actions OIDC subject claim allowed to publish images"
+  type        = string
+  default     = "repo:ariphmohd@143442610/robot-shop@1420533083:ref:refs/heads/main"
+}
+
 variable "enable_ecr_vpc_endpoints" {
   description = "Create private ECR API/DKR and S3 endpoints for EKS image pulls. Keep false for low-cost dev."
   type        = bool

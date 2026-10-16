@@ -28,6 +28,12 @@ variable "github_branch" {
   default     = "main"
 }
 
+variable "github_oidc_subject" {
+  description = "Exact GitHub Actions OIDC subject claim allowed to push images"
+  type        = string
+  default     = "repo:ariphmohd@143442610/robot-shop@1420533083:ref:refs/heads/main"
+}
+
 variable "enable_ecr_vpc_endpoints" {
   description = "Create private ECR and S3 image-pull endpoints in the VPC"
   type        = bool

@@ -71,6 +71,7 @@ module "ecr" {
   aws_region                  = var.aws_region
   github_repository           = var.github_repository
   github_branch               = var.github_branch
+  github_oidc_subject         = var.github_oidc_subject
   image_retention_count       = var.ecr_image_retention_count
   enable_vpc_endpoints        = var.enable_ecr_vpc_endpoints
   vpc_id                      = module.vpc.vpc_id

@@ -137,6 +137,11 @@ Stage 01 or Stage 02 state and can be run after AWS credentials are valid. The G
 `ariphmohd/robot-shop` running from the `main` branch through GitHub OIDC; no
 long-lived AWS access key is stored in GitHub.
 
+GitHub uses the repository's immutable OIDC subject format, so the trust policy
+also includes its stable owner and repository IDs. If this repository is
+transferred or recreated, update `github_oidc_subject` to the value shown by
+GitHub's OIDC customization API before applying Terraform.
+
 Development keeps `enable_ecr_vpc_endpoints = false`, so EKS can use its NAT
 path for future pulls. Production sets it to `true`, creating ECR API, ECR DKR,
 and Amazon S3 endpoints in the existing VPC without changing any repository.

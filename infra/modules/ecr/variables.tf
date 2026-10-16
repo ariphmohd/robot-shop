@@ -28,6 +28,16 @@ variable "github_branch" {
   type        = string
 }
 
+variable "github_oidc_subject" {
+  description = "Exact GitHub Actions OIDC sub claim allowed to publish images"
+  type        = string
+
+  validation {
+    condition     = startswith(var.github_oidc_subject, "repo:")
+    error_message = "github_oidc_subject must be a GitHub Actions subject claim beginning with repo:."
+  }
+}
+
 variable "image_retention_count" {
   description = "Maximum number of images retained in each repository"
   type        = number
