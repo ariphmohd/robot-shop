@@ -1,0 +1,7 @@
+# Keep the dispatch build context limited to source and Go module metadata.
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+*.md
