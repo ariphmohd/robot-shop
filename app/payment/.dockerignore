@@ -1,0 +1,10 @@
+.git
+.gitignore
+.dockerignore
+Dockerfile
+README.md
+*.md
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
