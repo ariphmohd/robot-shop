@@ -71,6 +71,87 @@ The `app/` directory supplies the complete local Docker Compose topology. The `i
 
 ---
 
+## Deployment Data Strategy: Local Containers vs. AWS Managed Services
+
+### What is deployed
+
+The application has **eight deployable application microservices**: `web`,
+`catalogue`, `user`, `cart`, `shipping`, `ratings`, `payment`, and `dispatch`.
+These are the only application images published to Amazon ECR and intended to
+run as Amazon EKS workloads.
+
+Docker Compose also starts four **stateful supporting dependencies**. They are
+not business microservices and are deliberately not published by the ECR CI
+workflow:
+
+| Local dependency | Used by | AWS managed deployment target |
+| --- | --- | --- |
+| MongoDB | `catalogue`, `user` | Amazon DocumentDB (MongoDB-compatible; validate compatibility first) |
+| MySQL | `ratings`, `shipping` | Amazon RDS for MySQL |
+| Redis | `cart`, `user` | Amazon ElastiCache for Redis |
+| RabbitMQ | `payment`, `dispatch` | Amazon MQ for RabbitMQ |
+
+`app/mongo/` and `app/mysql/` contain local container initialization and seed
+data. Keep them for Docker Compose, local development, demos, or a deliberate
+self-managed Kubernetes exercise. They are **not** part of the recommended AWS
+production workload.
+
+### Recommended AWS mode
+
+For EKS, run only the eight stateless application services as pods and use the
+AWS managed services above for persistence and messaging. In this mode, do not
+deploy MongoDB, MySQL, Redis, or RabbitMQ pods in EKS. AWS operates the
+underlying database/broker hosts; this project configures the application
+endpoints, credentials, network access, data initialization, backups, and
+monitoring.
+
+Terraform stage [`infra/stages/04-databases`](./infra/stages/04-databases)
+provisions this managed layer. RDS, ElastiCache, and Amazon MQ are enabled by
+the environment variables; DocumentDB is optional (`false` in `dev.tfvars`,
+`true` in `prod.tfvars`).
+
+### When to use the local/stateful containers instead
+
+Use the Compose dependencies when you need a low-cost local environment or
+when learning how to operate stateful workloads yourself. If you intentionally
+run these dependencies in EKS, you must add StatefulSets/Helm charts,
+PersistentVolumes, backups, high availability, patching, monitoring, and a
+recovery plan. Do not run an in-cluster database and its AWS managed equivalent
+for the same service at the same time.
+
+### Managed-service implementation checklist
+
+Before the first EKS application deployment, complete these steps:
+
+1. **Provision the network, security, secrets, and database stages.** Apply
+   stages `01-vpc`, `02-security-groups`, `03-secrets`, and `04-databases` for
+   the chosen environment. Review AWS costs before enabling DocumentDB or
+   Amazon MQ.
+2. **Initialize the managed data stores.** Apply the schemas and seed data in
+   `app/mysql/` to RDS. Migrate/seed the `catalogue` and `users` databases from
+   `app/mongo/` if DocumentDB is enabled.
+3. **Expose endpoints and credentials to EKS safely.** Kubernetes manifests
+   must source credentials from AWS Secrets Manager (via IRSA/external-secrets
+   or an equivalent approved pattern), never from image layers or Git. Pass the
+   Terraform endpoints to application environment variables such as
+   `MONGO_URL`, `REDIS_HOST`, `DB_HOST`, and `PDO_URL`.
+4. **Complete managed-service connection support before deployment.** The
+   current code defaults to Compose hostnames and RabbitMQ's local
+   `guest:guest` credentials. `payment` and `dispatch` must be updated to read
+   Amazon MQ credentials, endpoint/port, and TLS settings from secrets before
+   they can use Amazon MQ. DocumentDB also requires compatibility and TLS
+   validation; Redis TLS/auth configuration must be added if those features are
+   enabled.
+5. **Deploy only the eight application workloads.** Configure their EKS
+   Services, Deployments, health checks, resource limits, network policies,
+   and managed-service security-group access. Do not create EKS workloads for
+   `mongodb`, `mysql`, `redis`, or `rabbitmq` in this mode.
+6. **Validate end-to-end behavior.** Confirm catalogue/user persistence,
+   cart sessions, ratings/shipping queries, and the payment-to-dispatch AMQP
+   flow in a non-production environment before production rollout.
+
+---
+
 ## 📁 Monorepo Structure
 
 ```text
