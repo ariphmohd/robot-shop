@@ -18,6 +18,11 @@ output "private_app_subnet_ids" {
   value       = aws_subnet.private_app[*].id
 }
 
+output "private_app_route_table_ids" {
+  description = "Route table IDs associated with Tier 2 Private App Subnets"
+  value       = aws_route_table.private_app[*].id
+}
+
 output "isolated_db_subnet_ids" {
   description = "List of IDs for Tier 3 Isolated Database Subnets (RDS, DocDB, Redis)"
   value       = aws_subnet.isolated_db[*].id

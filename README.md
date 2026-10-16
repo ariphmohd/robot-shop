@@ -53,6 +53,10 @@ flowchart TB
     end
 
     Browser -. production entry .-> ALB
+    GitHub[GitHub Actions<br/>main branch] -->|OIDC short-lived credentials| EcrRole[Least-privilege<br/>ECR publisher role]
+    EcrRole -->|push immutable images| ECR[Amazon ECR<br/>service repositories]
+    EKS -->|pull service images| ECR
+    EKS -. prod: ECR API + DKR + S3 endpoints .-> ECR
     EKS -. runs .-> Web
     EKS -. runs .-> Catalogue
     EKS -. runs .-> User
@@ -63,7 +67,7 @@ flowchart TB
     EKS -. runs .-> Dispatch
 ```
 
-The `app/` directory supplies the complete local Docker Compose topology. The `infra/` directory provisions the AWS target; Kubernetes workload manifests and image publishing are the next implementation layer.
+The `app/` directory supplies the complete local Docker Compose topology. The `infra/` directory provisions the AWS target and the ECR/GitHub Actions publishing path; Kubernetes workload manifests remain the next implementation layer.
 
 ---
 
@@ -78,7 +82,7 @@ EKS-Three-Tier/
 │   ├── cart/                       # Shopping Cart Service (Node.js + Redis)
 │   ├── shipping/                   # Shipping & Tax Calculator (Java Spring Boot + MySQL)
 │   ├── payment/                    # Payment Gateway Processor (Python + RabbitMQ)
-│   ├── ratings/                    # Product Ratings API (PHP + MySQL)
+│   ├── ratings/                    # Product Ratings API (PHP 8.3 + MySQL)
 │   ├── dispatch/                   # Order Dispatch Consumer (Go + RabbitMQ)
 │   ├── mysql/                      # Database Schema & Seed Data
 │   ├── mongo/                      # Catalogue & User Seed Scripts
@@ -93,15 +97,20 @@ EKS-Three-Tier/
 │   │   ├── security_groups/        # Chained least-privilege security groups
 │   │   ├── secrets/                # AWS Secrets Manager & cryptographic password generation
 │   │   ├── databases/              # Amazon RDS MySQL, ElastiCache Redis, Amazon MQ, DocumentDB
+│   │   ├── ecr/                    # ECR service repositories, GitHub OIDC role & optional endpoints
 │   │   └── eks/                    # Amazon EKS v1.36, Worker Nodes, OIDC, IRSA, Add-ons
 │   ├── stages/                     # Decoupled Step-by-Step Execution Layers (Isolated State)
 │   │   ├── 01-vpc/
 │   │   ├── 02-security-groups/
 │   │   ├── 03-secrets/
 │   │   ├── 04-databases/
-│   │   └── 05-eks/
+│   │   ├── 05-ecr/
+│   │   └── 06-eks/
 │   ├── main.tf                     # Root "Run All at Once" orchestrator
 │   └── README.md                   # Detailed Infrastructure & Deployment Guide
+│
+├── .github/workflows/              # GitHub Actions CI workflows
+│   └── container-images.yml         # Build and publish immutable images to Amazon ECR
 │
 ├── .gitignore                      # Global exclusions for Terraform state, secrets, and build artifacts
 └── README.md                       # Root project overview
@@ -119,4 +128,4 @@ docker compose up --build
 ```
 
 ### 2. Cloud Infrastructure Provisioning (`infra/`)
-See [`infra/README.md`](./infra/README.md) for full instructions on deploying the AWS 3-tier infrastructure either **stage-by-stage** (`infra/stages/01-vpc` through `05-eks`) or **all-at-once** (`infra/main.tf`).
+See [`infra/README.md`](./infra/README.md) for full instructions on deploying the AWS 3-tier infrastructure either **stage-by-stage** (`infra/stages/01-vpc` through `06-eks`) or **all-at-once** (`infra/main.tf`).

@@ -3,7 +3,7 @@
 Production-grade, modular AWS infrastructure provisioning for the **Robot Shop 3-Tier Microservices Application** using 100% Terraform / OpenTofu.
 
 Supports **two execution modes**:
-1. **Decoupled Stage-by-Stage Mode (`stages/01-vpc` → `05-eks`)**: Provision, inspect, and verify each infrastructure layer independently with isolated state files and zero blast radius.
+1. **Decoupled Stage-by-Stage Mode (`stages/01-vpc` → `06-eks`)**: Provision, inspect, and verify each infrastructure layer independently with isolated state files and zero blast radius.
 2. **Unified All-at-Once Mode (Root `main.tf`)**: Provision the entire stack in a single command once all stages are verified.
 
 ---
@@ -65,6 +65,7 @@ EKS-Three-Tier/
     │   ├── security_groups/        # Chained least-privilege firewalls (alb_sg -> eks_sg -> db_sg)
     │   ├── secrets/                # AWS Secrets Manager & compliant random_password generation
     │   ├── databases/              # RDS MySQL, ElastiCache Redis, Amazon MQ, DocumentDB
+    │   ├── ecr/                    # Private ECR repositories, GitHub Actions OIDC role, optional endpoints
     │   └── eks/                    # EKS v1.36 Control Plane, Node Group, OIDC, IRSA, Add-ons
     │
     └── stages/                     # Decoupled Step-by-Step Execution Folders (Isolated States)
@@ -72,7 +73,8 @@ EKS-Three-Tier/
         ├── 02-security-groups/     # Step 2: Provision & verify ALB, Node, and DB security groups
         ├── 03-secrets/             # Step 3: Provision & verify AWS Secrets Manager vault
         ├── 04-databases/           # Step 4: Provision & verify RDS, Redis, and RabbitMQ
-        └── 05-eks/                 # Step 5: Provision & verify EKS v1.36 & Worker Nodes
+        ├── 05-ecr/                 # Step 5: Provision ECR, GitHub OIDC publisher role & optional endpoints
+        └── 06-eks/                 # Step 6: Provision & verify EKS v1.36 & Worker Nodes
 ```
 
 ---
@@ -116,9 +118,38 @@ terraform apply -var-file=../../environments/dev.tfvars -var="enable_mq=false"
 terraform apply -var-file=../../environments/dev.tfvars
 ```
 
-### Stage 5: Amazon EKS Cluster & Worker Nodes
+### Stage 5: Amazon ECR and GitHub Actions Publisher Role
 ```bash
-cd ../05-eks
+cd ../05-ecr
+terraform init
+terraform apply -var-file=../../environments/dev.tfvars
+
+# Copy this non-secret output into the GitHub repository Actions variable named
+# AWS_ECR_PUSH_ROLE_ARN (Settings → Secrets and variables → Actions → Variables).
+terraform output -raw github_actions_ecr_push_role_arn
+```
+
+The stage provisions one private repository per deployable service under the
+`robotshop-dev/` prefix, enables scan-on-push, retains the latest 30 images, and
+uses immutable image tags. With development's default
+`enable_ecr_vpc_endpoints = false`, this stage is independent: it does not read
+Stage 01 or Stage 02 state and can be run after AWS credentials are valid. The GitHub role trusts only
+`ariphmohd/robot-shop` running from the `main` branch through GitHub OIDC; no
+long-lived AWS access key is stored in GitHub.
+
+Development keeps `enable_ecr_vpc_endpoints = false`, so EKS can use its NAT
+path for future pulls. Production sets it to `true`, creating ECR API, ECR DKR,
+and Amazon S3 endpoints in the existing VPC without changing any repository.
+Only that endpoint-enabled configuration reads VPC and node-security-group
+outputs from Stages 01 and 02.
+
+After setting `AWS_ECR_PUSH_ROLE_ARN`, a push to `main` builds every service and
+pushes a uniquely tagged Linux/amd64 image. Pull requests build the same images
+without AWS credentials or an ECR push.
+
+### Stage 6: Amazon EKS Cluster & Worker Nodes
+```bash
+cd ../06-eks
 terraform init
 terraform apply -var-file=../../environments/dev.tfvars
 
@@ -127,6 +158,13 @@ aws eks update-kubeconfig --name robotshop-dev-eks --region us-east-1
 kubectl get nodes
 kubectl get pods -n kube-system
 ```
+
+> **Existing local-state users:** this release renames the former `05-eks`
+> directory to `06-eks` so ECR is created first. Before running Stage 6, move
+> any existing ignored local-state files (`terraform.tfstate` and, if present,
+> `terraform.tfstate.backup`) from `stages/05-eks/` to `stages/06-eks/`, then
+> run `terraform init` and review `terraform plan`. New deployments need no
+> migration.
 
 ---
 
@@ -156,3 +194,4 @@ terraform apply -var-file=environments/dev.tfvars
 | **Amazon MQ (RabbitMQ)** | Single-instance `mq.m7g.large` (v4.2) | Multi-AZ `mq.m7g.large` (v4.2) | Modern Graviton instance with compliant password generator. |
 | **EKS Worker Nodes** | 2 × `t3.micro` (Free Tier, 20GB disk) | 3 × `["m6i.large", "m7i.large"]` | Prefix Delegation enabled on VPC-CNI to allow up to 110 pods per `t3.micro`. |
 | **EBS CSI Add-on** | Disabled (`enable_ebs_csi = false`) | Enabled (`enable_ebs_csi = true`) | Stateless microservices with external PaaS DBs need zero PVCs in dev. |
+| **ECR image-pull endpoints** | Disabled | ECR API, ECR DKR, and S3 endpoints enabled | Production node image pulls stay private without redesigning repositories. |

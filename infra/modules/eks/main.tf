@@ -122,8 +122,41 @@ resource "aws_iam_role_policy_attachment" "nodes_AmazonEBSCSIDriverPolicy" {
 }
 
 # =============================================================================
-# 5. EKS Managed Node Group (Private App Subnets)
+# 5. Custom Node Launch Template and EKS Managed Node Group
 # =============================================================================
+resource "aws_launch_template" "nodes" {
+  name_prefix = "${var.project_name}-${var.environment}-nodes-"
+
+  # Supplying security groups through a launch template means EKS does not
+  # automatically attach its cluster security group. Keep it explicitly so
+  # kubelet/control-plane traffic remains available, then add the application
+  # node group security group used by the least-privilege database and endpoint
+  # rules.
+  vpc_security_group_ids = [
+    aws_eks_cluster.main.vpc_config[0].cluster_security_group_id,
+    var.eks_nodes_security_group_id,
+  ]
+
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_protocol_ipv6          = "disabled"
+    http_put_response_hop_limit = 2
+    http_tokens                 = "required"
+  }
+
+  tag_specifications {
+    resource_type = "instance"
+
+    tags = {
+      Name = "${var.project_name}-${var.environment}-worker-node"
+    }
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-nodes-launch-template"
+  }
+}
+
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.project_name}-${var.environment}-nodes"
@@ -138,7 +171,11 @@ resource "aws_eks_node_group" "main" {
 
   instance_types = var.node_instance_types
   capacity_type  = "ON_DEMAND"
-  disk_size      = 20
+
+  launch_template {
+    id      = aws_launch_template.nodes.id
+    version = aws_launch_template.nodes.latest_version
+  }
 
   labels = {
     role        = "worker"

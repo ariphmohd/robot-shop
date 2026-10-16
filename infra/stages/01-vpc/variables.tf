@@ -59,3 +59,9 @@ variable "enable_nat_gateway" {
   default     = true
 }
 
+variable "enable_ecr_vpc_endpoints" {
+  description = "Accepted from shared environment files; used by the ECR stage"
+  type        = bool
+  default     = false
+}
+

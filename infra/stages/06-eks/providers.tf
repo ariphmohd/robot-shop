@@ -5,7 +5,7 @@ provider "aws" {
     tags = {
       Project     = var.project_name
       Environment = var.environment
-      Stage       = "05-eks"
+      Stage       = "06-eks"
       ManagedBy   = "Terraform"
     }
   }

@@ -353,6 +353,10 @@
         $rootScope.scrollToTop = function() {
             $window.scrollTo({ top: 0, behavior: 'smooth' });
         };
+
+        $rootScope.cartDrawerOpen = false;
+        $rootScope.openCartDrawer = function() { $rootScope.cartDrawerOpen = true; };
+        $rootScope.closeCartDrawer = function() { $rootScope.cartDrawerOpen = false; };
     }]);
 
     // =========================================================================
@@ -369,6 +373,7 @@
         $scope.data.cart = currentUser.cart || { total: 0, items: [] };
 
         $scope.selectedCategory = 'All';
+        $scope.categoryFilter = function() { return true; };
         $scope.searchSuggestions = [];
         $rootScope.showSearchSuggest = false;
 
@@ -489,9 +494,28 @@
                 currentUser.cart = res.data;
                 currentUser.save();
                 $scope.data.cart = res.data;
+                $rootScope.openCartDrawer();
             }).catch(function(e) {
                 console.log('Error adding to cart', e);
             });
+        };
+
+        $scope.filterCategory = function(category) {
+            $scope.selectedCategory = category;
+            if (category === 'All') {
+                $scope.categoryFilter = function() { return true; };
+                return;
+            }
+            $scope.categoryFilter = function(product) {
+                var text = ((product.name || '') + ' ' + (product.description || '') + ' ' + (product.categories || []).join(' ')).toLowerCase();
+                var terms = {
+                    'Home Companions': ['ai', 'watson', 'stan'],
+                    'Field Robotics': ['robot', 'harvester', 'field', 'uhj'],
+                    'AI Modules': ['ai', 'watson', 'cognitive'],
+                    'Accessories': ['accessory', 'telemetry']
+                };
+                return (terms[category] || []).some(function(term) { return text.indexOf(term) !== -1; });
+            };
         };
 
         // ---------------------------------------------------------------------

@@ -13,6 +13,11 @@ output "private_app_subnet_ids" {
   value       = module.vpc.private_app_subnet_ids
 }
 
+output "private_app_route_table_ids" {
+  description = "Route table IDs associated with Tier 2 Private App Subnets"
+  value       = module.vpc.private_app_route_table_ids
+}
+
 output "isolated_db_subnet_ids" {
   description = "Tier 3 Isolated Database Subnets (RDS, DocumentDB, ElastiCache)"
   value       = module.vpc.isolated_db_subnet_ids

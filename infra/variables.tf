@@ -58,4 +58,28 @@ variable "enable_nat_gateway" {
   default     = true
 }
 
+variable "github_repository" {
+  description = "GitHub repository allowed to assume the CI ECR-push role, in OWNER/REPOSITORY form"
+  type        = string
+  default     = "ariphmohd/robot-shop"
+}
+
+variable "github_branch" {
+  description = "Git branch allowed to publish container images to ECR"
+  type        = string
+  default     = "main"
+}
+
+variable "enable_ecr_vpc_endpoints" {
+  description = "Create private ECR API/DKR and S3 endpoints for EKS image pulls. Keep false for low-cost dev."
+  type        = bool
+  default     = false
+}
+
+variable "ecr_image_retention_count" {
+  description = "Maximum number of images retained in each ECR repository"
+  type        = number
+  default     = 30
+}
+
 

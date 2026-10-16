@@ -1,0 +1,85 @@
+name: Build and publish container images
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - ".github/workflows/container-images.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"
+      - ".github/workflows/container-images.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: container-images-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_PREFIX: robotshop-dev
+
+jobs:
+  build-and-publish:
+    name: ${{ matrix.service }} image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - catalogue
+          - cart
+          - dispatch
+          - payment
+          - ratings
+          - shipping
+          - user
+          - web
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials through GitHub OIDC
+        if: github.event_name != 'pull_request'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          registry="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
+          echo "ECR_REGISTRY=${registry}" >> "$GITHUB_ENV"
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
+
+      - name: Build image for pull-request validation
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --pull --platform linux/amd64 \
+            --tag "robotshop-ci/${{ matrix.service }}:${GITHUB_SHA}" \
+            "app/${{ matrix.service }}"
+
+      - name: Build and push immutable ECR image
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          image_tag="sha-${GITHUB_SHA::12}-${GITHUB_RUN_ID}"
+          image_uri="${ECR_REGISTRY}/${ECR_REPOSITORY_PREFIX}/${{ matrix.service }}:${image_tag}"
+          docker build --pull --platform linux/amd64 --tag "$image_uri" "app/${{ matrix.service }}"
+          docker push "$image_uri"
+          echo "Published $image_uri"

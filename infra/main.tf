@@ -60,9 +60,27 @@ module "databases" {
   enable_docdb   = var.enable_docdb
 }
 
+# =============================================================================
+# Stage 5: Container Registry, GitHub OIDC CI Identity, and Optional PrivateLink
+# =============================================================================
+module "ecr" {
+  source = "./modules/ecr"
+
+  project_name                = var.project_name
+  environment                 = var.environment
+  aws_region                  = var.aws_region
+  github_repository           = var.github_repository
+  github_branch               = var.github_branch
+  image_retention_count       = var.ecr_image_retention_count
+  enable_vpc_endpoints        = var.enable_ecr_vpc_endpoints
+  vpc_id                      = module.vpc.vpc_id
+  private_app_subnet_ids      = module.vpc.private_app_subnet_ids
+  private_app_route_table_ids = module.vpc.private_app_route_table_ids
+  eks_nodes_security_group_id = module.security_groups.eks_nodes_security_group_id
+}
 
 # =============================================================================
-# Stage 5: Amazon EKS Cluster & Managed Worker Node Group
+# Stage 6: Amazon EKS Cluster & Managed Worker Node Group
 # =============================================================================
 module "eks" {
   source = "./modules/eks"

@@ -46,3 +46,13 @@ variable "enable_ebs_csi" {
   type    = bool
   default = false
 }
+
+variable "enable_nat_gateway" {
+  type    = bool
+  default = true
+}
+
+variable "enable_ecr_vpc_endpoints" {
+  type    = bool
+  default = false
+}

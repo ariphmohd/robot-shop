@@ -1,6 +1,6 @@
 # Ratings Microservice
 
-The **Ratings** microservice manages product reviews and average rating scores (1 to 5 stars). It is implemented in **PHP 7.4** with the **Symfony MicroKernel** running under Apache, backed by **MySQL**.
+The **Ratings** microservice manages product reviews and average rating scores (1 to 5 stars). It is implemented in **PHP 8.3** with the **Symfony MicroKernel** running under Apache, backed by **MySQL**.
 
 ---
 

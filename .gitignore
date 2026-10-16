@@ -1,0 +1,9 @@
+# Terraform working files and state can contain provider binaries and secrets.
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Keep dependency selections reproducible.
+!**/.terraform.lock.hcl

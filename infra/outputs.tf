@@ -81,7 +81,25 @@ output "rabbitmq_endpoint" {
 }
 
 # =============================================================================
-# Stage 5: Amazon EKS Cluster Outputs
+# Stage 5: Container Registry and CI Outputs
+# =============================================================================
+output "ecr_repository_urls" {
+  description = "Map of deployable service names to their ECR repository URLs"
+  value       = module.ecr.repository_urls
+}
+
+output "github_actions_ecr_push_role_arn" {
+  description = "IAM role ARN to store as the AWS_ECR_PUSH_ROLE_ARN GitHub Actions repository variable"
+  value       = module.ecr.github_actions_ecr_push_role_arn
+}
+
+output "ecr_vpc_endpoint_ids" {
+  description = "IDs of optional VPC endpoints used for private ECR image pulls"
+  value       = module.ecr.vpc_endpoint_ids
+}
+
+# =============================================================================
+# Stage 6: Amazon EKS Cluster Outputs
 # =============================================================================
 output "eks_cluster_name" {
   description = "The name of the Amazon EKS cluster"

@@ -24,7 +24,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/auto-complete.css">
     <meta http-equiv="Cache-Control" content="no-Cache">
@@ -41,10 +41,10 @@
             <div class="container header-inner">
                 <!-- Brand Link -->
                 <a href="/" class="brand-link" aria-label="AriphMohd Robot Shop Home">
-                    <img src="/media/logo.svg" alt="AriphMohd Robotics" class="brand-logo"/>
+                    <span class="brand-logo" aria-hidden="true"><i></i><i></i><i></i></span>
                     <div class="brand-title-wrap">
-                        <span class="brand-name">AriphMohd</span>
-                        <span class="brand-subtitle">ROBOT SHOP</span>
+                        <span class="brand-name">ariphmohd</span>
+                        <span class="brand-subtitle">robotics marketplace</span>
                     </div>
                 </a>
 
@@ -119,13 +119,13 @@
                     </button>
 
                     <!-- Cart with Yellow Badge -->
-                    <a href="/cart" class="nav-action-item nav-cart-item" aria-label="Shopping Cart">
+                    <button type="button" class="nav-action-item nav-cart-item" ng-click="openCartDrawer();" aria-label="Open shopping cart">
                         <div class="cart-icon-wrap">
                             🛒
                             <span class="cart-count-badge" ng-if="getCartCount(data.cart) > 0">{{ getCartCount(data.cart) }}</span>
                         </div>
                         <span class="nav-line-2">Cart</span>
-                    </a>
+                    </button>
 
                     <!-- Appearance Theme Switcher (Light / Dark / System) -->
                     <div class="theme-switch-container">
@@ -192,6 +192,14 @@
     <main class="container" style="flex: 1;">
         <div ng-view></div>
     </main>
+
+    <div class="cart-drawer-backdrop" ng-if="cartDrawerOpen" ng-click="closeCartDrawer();"></div>
+    <aside class="cart-drawer" ng-class="{'is-open': cartDrawerOpen}" aria-label="Shopping cart" aria-hidden="{{ !cartDrawerOpen }}">
+        <div class="cart-drawer-header"><div><span class="eyebrow">YOUR SELECTION</span><h2>Cart <span>({{ getCartCount(data.cart) }})</span></h2></div><button type="button" class="drawer-close" ng-click="closeCartDrawer();" aria-label="Close cart">×</button></div>
+        <div class="cart-drawer-items" ng-if="data.cart.items.length"><div class="drawer-cart-item" ng-repeat="item in data.cart.items" ng-if="item.sku !== 'SHIP'"><img ng-src="/images/{{ item.sku }}.png" alt="{{ item.name }}"/><div><strong>{{ item.name }}</strong><span>Quantity {{ item.qty }}</span></div><b>€{{ (item.subtotal || 0).toFixed(2) }}</b></div></div>
+        <div class="cart-drawer-empty" ng-if="!data.cart.items.length">Your cart is waiting for its first intelligent companion.</div>
+        <div class="cart-drawer-footer"><div><span>Estimated total</span><strong>€{{ (data.cart.total || 0).toFixed(2) }}</strong></div><a href="/cart" class="btn btn-purchase drawer-checkout" ng-click="closeCartDrawer();">View cart &amp; checkout</a></div>
+    </aside>
 
     <!-- Floating Comparison Bar (When 1+ robots pinned) -->
     <div class="compare-floating-bar" ng-if="compareList.length > 0">
