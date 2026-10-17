@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: robot-shop-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: robot-shop
+    app.kubernetes.io/environment: dev
+spec:
+  project: robot-shop
+  source:
+    repoURL: https://github.com/ariphmohd/robot-shop.git
+    targetRevision: main
+    path: k8s/overlays/dev
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: robot-shop
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
