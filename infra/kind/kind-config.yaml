@@ -1,0 +1,24 @@
+# Local Kubernetes cluster for the codex/kind-test branch.
+# This file is used only on the Ubuntu VM hosted in UTM; it creates no AWS
+# resources and does not replace the EKS Terraform stages.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: robot-shop-test
+networking:
+  ipFamily: ipv4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+  - role: worker
