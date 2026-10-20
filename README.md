@@ -33,6 +33,120 @@ It **does not** validate AWS-specific services. These must be tested in EKS UAT:
 - VPC routing, security groups, private endpoints, and AWS Secrets Manager
   integration.
 
+## Data-service design: Kind branch versus `main`
+
+### Planned Kind runtime flow
+
+```mermaid
+flowchart TB
+    Browser[Local browser] --> Ingress[Kind local Ingress]
+
+    subgraph VM[Ubuntu VM running in UTM]
+        subgraph KIND[Kind cluster: robot-shop-test]
+            Ingress --> Web[web]
+            Web --> Catalogue[catalogue]
+            Web --> User[user]
+            Web --> Cart[cart]
+            Web --> Shipping[shipping]
+            Web --> Ratings[ratings]
+            Web --> Payment[payment]
+
+            User --> Redis[(Redis pod)]
+            Cart --> Redis
+            Shipping --> MySQL[(MariaDB pod + local PVC)]
+            Ratings --> MySQL
+            Payment --> RabbitMQ[RabbitMQ pod]
+            RabbitMQ --> Dispatch[dispatch]
+        end
+    end
+
+    Catalogue --> Atlas[(MongoDB Atlas Free cluster)]
+    User --> Atlas
+```
+
+### Service-by-service decision
+
+| Dependency | `codex/kind-test` | Why for local testing | `main` / future EKS UAT and production |
+|---|---|---|---|
+| MongoDB | **MongoDB Atlas Free**; no MongoDB pod | You already have a managed native MongoDB cluster. It preserves the application's MongoDB behaviour without consuming Kind storage or compute. | The current Terraform has an optional DocumentDB module, but `enable_docdb = false` in the committed dev configuration. The intended production direction can instead be a paid Atlas cluster with private connectivity after validation. |
+| MySQL | **One MariaDB StatefulSet** using the existing `app/mysql` image and a local PVC | The application needs seeded `cities` and `ratings` databases. This branch has no AWS RDS infrastructure, and connecting a local VM to RDS would create unnecessary network/security coupling. | Amazon RDS for MySQL, provisioned by the Stage 04 Terraform design. |
+| Redis | **One Redis pod**, non-persistent | Redis holds disposable cart/cache data. A local single pod is sufficient to test the application protocol and service discovery. | Amazon ElastiCache for Redis. |
+| RabbitMQ | **One RabbitMQ pod**, non-persistent | It validates payment-to-dispatch AMQP messaging without creating an Amazon MQ broker for local testing. | Amazon MQ for RabbitMQ. |
+
+> `app/mysql` is named for the application dependency, but its current Dockerfile
+> is based on **MariaDB 10.5**, a MySQL-compatible implementation. It imports the
+> repository's existing SQL seed data on first initialization.
+
+### Environment comparison
+
+```mermaid
+flowchart LR
+    subgraph KIND[Local Kind branch: codex/kind-test]
+        KApp[Robot Shop pods in Kind]
+        KAtlas[(MongoDB Atlas Free)]
+        KMySQL[(MariaDB StatefulSet
+local PVC)]
+        KRedis[(Redis pod)]
+        KMQ[RabbitMQ pod]
+        KApp --> KAtlas
+        KApp --> KMySQL
+        KApp --> KRedis
+        KApp --> KMQ
+    end
+
+    subgraph AWS[Future EKS UAT / production from main-derived branches]
+        EApp[Robot Shop pods in EKS]
+        EAtlas[(Atlas paid tier
+or DocumentDB after a separate decision)]
+        ERDS[(Amazon RDS MySQL)]
+        ERedis[(ElastiCache Redis)]
+        EMQ[(Amazon MQ RabbitMQ)]
+        EALB[Application Load Balancer]
+        EALB --> EApp
+        EApp --> EAtlas
+        EApp --> ERDS
+        EApp --> ERedis
+        EApp --> EMQ
+    end
+```
+
+### Why MySQL is a pod here
+
+MongoDB Atlas is a managed MongoDB service that you already have available.
+There is no equivalent existing managed MySQL service in this local Kind branch.
+Although RDS is the managed MySQL target for EKS, this branch deliberately has
+no VPC, RDS, security groups, or Terraform resources.
+
+Therefore, MySQL/MariaDB is deployed locally to make the application complete:
+
+```text
+shipping ──JDBC/3306──> mysql.robot-shop.svc.cluster.local
+ratings  ──PDO/3306───> mysql.robot-shop.svc.cluster.local
+```
+
+It is a **single-replica test database**, not a production database. We will
+use a StatefulSet with a small local PersistentVolumeClaim so data survives pod
+restarts within the same Kind cluster. The data lives on the Ubuntu VM's Docker
+storage and is deleted when the Kind cluster/PVC is deleted. It is not EBS, EFS,
+or S3.
+
+### Dependency deployment order
+
+Before application services are added, Argo CD will deploy dependencies in this
+order:
+
+1. Atlas connection secret reference; Atlas is external and already managed.
+2. MariaDB StatefulSet, local storage provisioner/PVC, internal Service, and
+   existing SQL seed data.
+3. Redis internal Service and pod.
+4. RabbitMQ internal Service and pod.
+5. `catalogue` and `user`, then the remaining application services.
+6. `web` and a Kind-compatible local Ingress.
+
+Credentials stay outside Git. Atlas, MariaDB, and RabbitMQ credentials will be
+provided as local Kubernetes Secrets for Kind. AWS Secrets Manager integration
+will be introduced only in future EKS environments.
+
 ## Repository layout for this branch
 
 ```text
