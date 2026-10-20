@@ -1,212 +1,447 @@
-# Robot Shop — AWS 3-Tier Microservices Architecture (`app/` + `infra/`)
+# Robot Shop — Local Kind Test Environment
 
-A complete polyglot microservices e-commerce application (`app/`) paired with an enterprise-grade, strict 3-Tier AWS cloud infrastructure (`infra/`) provisioned via Terraform / OpenTofu.
+> **Branch:** `codex/kind-test`
+> **Purpose:** run and validate the Robot Shop Kubernetes application locally on
+> an Ubuntu virtual machine in UTM before promoting the deployment design to
+> EKS-based UAT and production environments.
 
----
+This branch keeps the application source and GitOps manifests, but intentionally
+contains **no AWS Terraform**. Its only infrastructure definition is the local
+Kind configuration at [`infra/kind/kind-config.yaml`](infra/kind/kind-config.yaml).
 
-## Architecture Flow
-
-```mermaid
-flowchart TB
-    Browser([Customer browser]) -->|HTTP / HTTPS| Web[web<br/>Nginx + AngularJS]
-
-    subgraph Application[Application tier - containerized microservices]
-        direction LR
-        Catalogue[catalogue<br/>Node.js]
-        User[user<br/>Node.js]
-        Cart[cart<br/>Node.js]
-        Shipping[shipping<br/>Java / Spring Boot]
-        Ratings[ratings<br/>PHP / Symfony]
-        Payment[payment<br/>Python / Flask]
-        Dispatch[dispatch<br/>Go worker]
-    end
-
-    Web -->|/api/catalogue| Catalogue
-    Web -->|/api/user| User
-    Web -->|/api/cart| Cart
-    Web -->|/api/shipping| Shipping
-    Web -->|/api/ratings| Ratings
-    Web -->|/api/payment| Payment
-
-    Catalogue --> Mongo[(MongoDB<br/>catalogue)]
-    User --> MongoUsers[(MongoDB<br/>users)]
-    User --> Redis[(Redis<br/>sessions)]
-    Cart --> Redis
-    Cart -->|product validation| Catalogue
-    Shipping --> MySQL[(MySQL<br/>cities + ratings)]
-    Shipping -->|shipping fee| Cart
-    Ratings --> MySQL
-    Ratings -->|product validation| Catalogue
-    Payment -->|verify user| User
-    Payment -->|verify cart| Cart
-    Payment -. order event .-> RabbitMQ[(RabbitMQ<br/>orders)]
-    RabbitMQ -. order event .-> Dispatch
-
-    subgraph AWS[AWS deployment target provisioned by Terraform]
-        direction LR
-        ALB[Application Load Balancer] --> EKS[Amazon EKS]
-        Secrets[AWS Secrets Manager] -. credentials via IRSA .-> EKS
-        EKS --> RDS[Amazon RDS MySQL]
-        EKS --> Cache[ElastiCache Redis]
-        EKS --> MQ[Amazon MQ RabbitMQ]
-        EKS -. optional .-> DocDB[Amazon DocumentDB]
-    end
-
-    Browser -. production entry .-> ALB
-    GitHub[GitHub Actions<br/>main branch] -->|OIDC short-lived credentials| EcrRole[Least-privilege<br/>ECR publisher role]
-    EcrRole -->|push immutable images| ECR[Amazon ECR<br/>service repositories]
-    EKS -->|pull service images| ECR
-    EKS -. prod: ECR API + DKR + S3 endpoints .-> ECR
-    EKS -. runs .-> Web
-    EKS -. runs .-> Catalogue
-    EKS -. runs .-> User
-    EKS -. runs .-> Cart
-    EKS -. runs .-> Shipping
-    EKS -. runs .-> Ratings
-    EKS -. runs .-> Payment
-    EKS -. runs .-> Dispatch
-```
-
-The `app/` directory supplies the complete local Docker Compose topology. The `infra/` directory provisions the AWS target and the ECR/GitHub Actions publishing path; Kubernetes workload manifests remain the next implementation layer.
-
----
-
-## Deployment Data Strategy: Local Containers vs. AWS Managed Services
-
-### What is deployed
-
-The application has **eight deployable application microservices**: `web`,
-`catalogue`, `user`, `cart`, `shipping`, `ratings`, `payment`, and `dispatch`.
-These are the only application images published to Amazon ECR and intended to
-run as Amazon EKS workloads.
-
-Docker Compose also starts four **stateful supporting dependencies**. They are
-not business microservices and are deliberately not published by the ECR CI
-workflow:
-
-| Local dependency | Used by | AWS managed deployment target |
-| --- | --- | --- |
-| MongoDB | `catalogue`, `user` | Amazon DocumentDB (MongoDB-compatible; validate compatibility first) |
-| MySQL | `ratings`, `shipping` | Amazon RDS for MySQL |
-| Redis | `cart`, `user` | Amazon ElastiCache for Redis |
-| RabbitMQ | `payment`, `dispatch` | Amazon MQ for RabbitMQ |
-
-`app/mongo/` and `app/mysql/` contain local container initialization and seed
-data. Keep them for Docker Compose, local development, demos, or a deliberate
-self-managed Kubernetes exercise. They are **not** part of the recommended AWS
-production workload.
-
-### Recommended AWS mode
-
-For EKS, run only the eight stateless application services as pods and use the
-AWS managed services above for persistence and messaging. In this mode, do not
-deploy MongoDB, MySQL, Redis, or RabbitMQ pods in EKS. AWS operates the
-underlying database/broker hosts; this project configures the application
-endpoints, credentials, network access, data initialization, backups, and
-monitoring.
-
-Terraform stage [`infra/stages/04-databases`](./infra/stages/04-databases)
-provisions this managed layer. RDS, ElastiCache, and Amazon MQ are enabled by
-the environment variables; DocumentDB is optional (`false` in `dev.tfvars`,
-`true` in `prod.tfvars`).
-
-### When to use the local/stateful containers instead
-
-Use the Compose dependencies when you need a low-cost local environment or
-when learning how to operate stateful workloads yourself. If you intentionally
-run these dependencies in EKS, you must add StatefulSets/Helm charts,
-PersistentVolumes, backups, high availability, patching, monitoring, and a
-recovery plan. Do not run an in-cluster database and its AWS managed equivalent
-for the same service at the same time.
-
-### Managed-service implementation checklist
-
-Before the first EKS application deployment, complete these steps:
-
-1. **Provision the network, security, secrets, and database stages.** Apply
-   stages `01-vpc`, `02-security-groups`, `03-secrets`, and `04-databases` for
-   the chosen environment. Review AWS costs before enabling DocumentDB or
-   Amazon MQ.
-2. **Initialize the managed data stores.** Apply the schemas and seed data in
-   `app/mysql/` to RDS. Migrate/seed the `catalogue` and `users` databases from
-   `app/mongo/` if DocumentDB is enabled.
-3. **Expose endpoints and credentials to EKS safely.** Kubernetes manifests
-   must source credentials from AWS Secrets Manager (via IRSA/external-secrets
-   or an equivalent approved pattern), never from image layers or Git. Pass the
-   Terraform endpoints to application environment variables such as
-   `MONGO_URL`, `REDIS_HOST`, `DB_HOST`, and `PDO_URL`.
-4. **Complete managed-service connection support before deployment.** The
-   current code defaults to Compose hostnames and RabbitMQ's local
-   `guest:guest` credentials. `payment` and `dispatch` must be updated to read
-   Amazon MQ credentials, endpoint/port, and TLS settings from secrets before
-   they can use Amazon MQ. DocumentDB also requires compatibility and TLS
-   validation; Redis TLS/auth configuration must be added if those features are
-   enabled.
-5. **Deploy only the eight application workloads.** Configure their EKS
-   Services, Deployments, health checks, resource limits, network policies,
-   and managed-service security-group access. Do not create EKS workloads for
-   `mongodb`, `mysql`, `redis`, or `rabbitmq` in this mode.
-6. **Validate end-to-end behavior.** Confirm catalogue/user persistence,
-   cart sessions, ratings/shipping queries, and the payment-to-dispatch AMQP
-   flow in a non-production environment before production rollout.
-
----
-
-## 📁 Monorepo Structure
+## What this environment validates
 
 ```text
-EKS-Three-Tier/
-├── app/                            # Polyglot Microservices Application & Dockerfiles
-│   ├── web/                        # Storefront UI (Nginx + AngularJS)
-│   ├── catalogue/                  # Product Catalogue Service (Node.js + MongoDB)
-│   ├── user/                       # User Authentication Service (Node.js + MongoDB + Redis)
-│   ├── cart/                       # Shopping Cart Service (Node.js + Redis)
-│   ├── shipping/                   # Shipping & Tax Calculator (Java Spring Boot + MySQL)
-│   ├── payment/                    # Payment Gateway Processor (Python + RabbitMQ)
-│   ├── ratings/                    # Product Ratings API (PHP 8.3 + MySQL)
-│   ├── dispatch/                   # Order Dispatch Consumer (Go + RabbitMQ)
-│   ├── mysql/                      # Database Schema & Seed Data
-│   ├── mongo/                      # Catalogue & User Seed Scripts
-│   └── docker-compose.yaml         # Local multi-container developer environment
-│
-├── infra/                          # AWS 3-Tier Cloud Infrastructure (Terraform)
-│   ├── environments/
-│   │   ├── dev.tfvars              # Free-Tier compliant Dev environment config
-│   │   └── prod.tfvars             # Multi-AZ HA Production environment config
-│   ├── modules/                    # Reusable Terraform Modules
-│   │   ├── vpc/                    # Tier 1 Public, Tier 2 Private App, Tier 3 Air-Gapped DB Subnets
-│   │   ├── security_groups/        # Chained least-privilege security groups
-│   │   ├── secrets/                # AWS Secrets Manager & cryptographic password generation
-│   │   ├── databases/              # Amazon RDS MySQL, ElastiCache Redis, Amazon MQ, DocumentDB
-│   │   ├── ecr/                    # ECR service repositories, GitHub OIDC role & optional endpoints
-│   │   └── eks/                    # Amazon EKS v1.36, Worker Nodes, OIDC, IRSA, Add-ons
-│   ├── stages/                     # Decoupled Step-by-Step Execution Layers (Isolated State)
-│   │   ├── 01-vpc/
-│   │   ├── 02-security-groups/
-│   │   ├── 03-secrets/
-│   │   ├── 04-databases/
-│   │   ├── 05-ecr/
-│   │   └── 06-eks/
-│   ├── main.tf                     # Root "Run All at Once" orchestrator
-│   └── README.md                   # Detailed Infrastructure & Deployment Guide
-│
-├── .github/workflows/              # GitHub Actions CI workflows
-│   └── container-images.yml         # Build and publish immutable images to Amazon ECR
-│
-├── .gitignore                      # Global exclusions for Terraform state, secrets, and build artifacts
-└── README.md                       # Root project overview
+Git branch → Argo CD in Kind → Kubernetes manifests → Robot Shop containers
+                                             │
+                                             └── MongoDB Atlas Free cluster
 ```
 
----
+It is appropriate for testing:
 
-## 🚀 Getting Started
+- Kubernetes Deployments, Services, ConfigMaps, Secrets, probes, and DNS.
+- Argo CD GitOps reconciliation from `codex/kind-test`.
+- Application-to-application traffic and MongoDB Atlas connectivity.
+- Local Ingress routing on the Ubuntu VM.
+- The exact immutable container image produced by the existing CI pipeline.
 
-### 1. Local Application Testing (`app/`)
-See [`app/README.md`](./app/README.md) to build and run the microservices locally with Docker Compose:
+It **does not** validate AWS-specific services. These must be tested in EKS UAT:
+
+- AWS Load Balancer Controller and ALB annotations.
+- EKS Pod Identity / IAM roles for service accounts.
+- EKS worker-node IAM authentication to ECR.
+- VPC routing, security groups, private endpoints, and AWS Secrets Manager
+  integration.
+
+## Repository layout for this branch
+
+```text
+app/                    # Unchanged Robot Shop application source
+.github/workflows/      # Existing CI image-build workflow
+infra/kind/             # Local Kind cluster definition only
+k8s/                    # Argo CD and Kubernetes GitOps manifests
+```
+
+## 1. Prepare the Ubuntu VM in UTM
+
+Create an Ubuntu 24.04 or 22.04 virtual machine. Allocate at least:
+
+| Resource | Recommendation |
+|---|---:|
+| CPU | 4 vCPUs |
+| Memory | 8 GiB RAM |
+| Disk | 30 GiB free space |
+| Network | NAT/shared networking with outbound Internet access |
+
+The VM needs Docker, Kind, `kubectl`, Helm, Git, and outbound access to GitHub,
+Docker Hub, Amazon ECR, and MongoDB Atlas.
+
+Check whether the Ubuntu guest is x86_64 or ARM64:
+
 ```bash
-cd app
-docker compose up --build
+uname -m
 ```
 
-### 2. Cloud Infrastructure Provisioning (`infra/`)
-See [`infra/README.md`](./infra/README.md) for full instructions on deploying the AWS 3-tier infrastructure either **stage-by-stage** (`infra/stages/01-vpc` through `06-eks`) or **all-at-once** (`infra/main.tf`).
+On Apple Silicon Macs, UTM commonly uses an ARM64 (`aarch64`) Ubuntu guest. The
+Kind node image configured in this repository supports both architectures.
+
+## 2. Clone the correct branch
+
+On the Ubuntu VM:
+
+```bash
+git clone --branch codex/kind-test --single-branch \
+  https://github.com/ariphmohd/robot-shop.git
+cd robot-shop
+
+git branch --show-current
+```
+
+Expected output:
+
+```text
+codex/kind-test
+```
+
+Fetch later changes with:
+
+```bash
+git pull --ff-only origin codex/kind-test
+```
+
+## 3. Install Docker Engine
+
+If Docker is not already installed, install Docker Engine from Docker's official
+APT repository. Do not install Docker Desktop inside the Ubuntu VM.
+
+```bash
+sudo apt update
+sudo apt install -y ca-certificates curl git unzip
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
+  -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+
+sudo tee /etc/apt/sources.list.d/docker.sources >/dev/null <<EOF_DOCKER
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF_DOCKER
+
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io \
+  docker-buildx-plugin docker-compose-plugin
+sudo systemctl enable --now docker
+
+sudo usermod -aG docker "$USER"
+```
+
+The Docker group allows the current user to run Docker without `sudo`. Log out
+and back into the Ubuntu VM, or start a new shell with `newgrp docker`, before
+continuing:
+
+```bash
+newgrp docker
+docker run --rm hello-world
+```
+
+If an older `docker.io` package is already installed, follow Docker's official
+migration instructions before installing `docker-ce`.
+
+## 4. Install Kind, kubectl, and Helm
+
+### Kind
+
+This repository pins Kind to `v0.33.0`. Download the binary matching the Ubuntu
+VM architecture:
+
+```bash
+KIND_VERSION=v0.33.0
+case "$(uname -m)" in
+  x86_64) KIND_ARCH=amd64 ;;
+  aarch64|arm64) KIND_ARCH=arm64 ;;
+  *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+esac
+
+curl --fail --location --output kind \
+  "https://kind.sigs.k8s.io/dl/${KIND_VERSION}/kind-linux-${KIND_ARCH}"
+chmod +x kind
+sudo install -m 0755 kind /usr/local/bin/kind
+rm kind
+
+kind version
+```
+
+### kubectl
+
+The Kind configuration uses Kubernetes `v1.33.0`; this `kubectl` release is in
+the same supported minor version.
+
+```bash
+KUBECTL_VERSION=v1.33.4
+case "$(uname -m)" in
+  x86_64) KUBECTL_ARCH=amd64 ;;
+  aarch64|arm64) KUBECTL_ARCH=arm64 ;;
+  *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+esac
+
+curl --fail --location --output kubectl \
+  "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${KUBECTL_ARCH}/kubectl"
+curl --fail --location --output kubectl.sha256 \
+  "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/${KUBECTL_ARCH}/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+sudo install -m 0755 kubectl /usr/local/bin/kubectl
+rm kubectl kubectl.sha256
+
+kubectl version --client
+```
+
+### Helm
+
+Install Helm from its official Debian/Ubuntu package repository:
+
+```bash
+HELM_APT_KEY_ID="DDF78C3E6EBB2D2CC223C95C62BA89D07698DBC6"
+sudo apt-get install -y curl gpg
+curl -fsSL https://packages.buildkite.com/helm-linux/helm-debian/gpgkey \
+  > /tmp/helm.asc
+
+if [ "$(gpg --import --import-options=show-only --with-colons /tmp/helm.asc \
+  | awk -F: '$1 == "fpr" {print $10}' | head -n 1)" != "$HELM_APT_KEY_ID" ]; then
+  echo "Unexpected Helm APT signing key" >&2
+  exit 1
+fi
+
+sudo install -m 0644 -D /tmp/helm.asc /etc/apt/keyrings/helm.asc
+sudo tee /etc/apt/sources.list.d/helm-stable-debian.sources >/dev/null <<'EOF_HELM'
+Types: deb
+URIs: https://packages.buildkite.com/helm-linux/helm-debian/any/
+Suites: any
+Components: main
+Signed-By: /etc/apt/keyrings/helm.asc
+EOF_HELM
+
+sudo apt-get update
+sudo apt-get install -y helm
+rm /tmp/helm.asc
+
+helm version
+```
+
+### AWS CLI (needed only to pull CI-built images from private ECR)
+
+Install AWS CLI v2 if it is not already available. Select the download matching
+the Ubuntu VM architecture:
+
+```bash
+case "$(uname -m)" in
+  x86_64) AWSCLI_ARCH=x86_64 ;;
+  aarch64|arm64) AWSCLI_ARCH=aarch64 ;;
+  *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+esac
+
+curl --fail --location --output awscliv2.zip \
+  "https://awscli.amazonaws.com/awscli-exe-linux-${AWSCLI_ARCH}.zip"
+unzip -q awscliv2.zip
+sudo ./aws/install
+rm -rf aws awscliv2.zip
+
+aws --version
+```
+
+Authenticate the CLI using your approved AWS access method, then verify it:
+
+```bash
+aws sts get-caller-identity
+```
+
+Do not copy long-lived AWS access keys into this repository, Kubernetes
+manifests, or shell scripts.
+
+## 5. Create and validate the Kind cluster
+
+Ensure ports `80` and `443` are unused in the Ubuntu VM:
+
+```bash
+sudo ss -ltnp '( sport = :80 or sport = :443 )'
+```
+
+Create the cluster from the repository configuration:
+
+```bash
+kind create cluster --config infra/kind/kind-config.yaml
+```
+
+Validate it:
+
+```bash
+kubectl config use-context kind-robot-shop-test
+kubectl cluster-info
+kubectl get nodes -o wide
+kubectl get pods --all-namespaces
+```
+
+Expected nodes:
+
+```text
+robot-shop-test-control-plane   Ready
+robot-shop-test-worker           Ready
+```
+
+The configuration creates a control plane and one worker node. It maps the
+Ubuntu VM's ports `80` and `443` to the control-plane node for local Ingress
+testing. The cluster uses a digest-pinned, multi-architecture Kind node image.
+
+## 6. Run a Kubernetes smoke test
+
+Validate scheduling, networking, DNS, and `kubectl` access before installing
+Robot Shop components:
+
+```bash
+kubectl create namespace smoke-test
+kubectl -n smoke-test create deployment web --image=nginx:1.27-alpine
+kubectl -n smoke-test wait --for=condition=available deployment/web --timeout=120s
+kubectl -n smoke-test expose deployment web --port=80
+kubectl -n smoke-test get pods,svc
+
+kubectl -n smoke-test run dns-test --rm -it --restart=Never \
+  --image=busybox:1.37 -- nslookup web.smoke-test.svc.cluster.local
+
+kubectl delete namespace smoke-test
+```
+
+## 7. Configure MongoDB Atlas for local testing
+
+Use your existing Atlas Free cluster for the `catalogue` and `user` services.
+
+1. Create least-privileged Atlas database users. Prefer separate users for the
+   `catalogue` and `users` databases.
+2. Find the Ubuntu VM's current public egress address:
+
+   ```bash
+   curl -4 https://checkip.amazonaws.com
+   ```
+
+3. Add the returned address as `<address>/32` to the Atlas project IP access
+   list.
+4. Obtain the TLS-enabled Atlas connection string.
+5. Keep Atlas credentials out of Git. Later manifests will reference a
+   Kubernetes Secret created locally, while UAT/production will obtain the
+   values from AWS Secrets Manager.
+
+Do not use `0.0.0.0/0` for normal testing. The VM's public IP can change after
+network or VM changes; update the Atlas IP access list when connectivity fails.
+
+## 8. Use CI-built ECR images in Kind
+
+The existing GitHub Actions workflow builds and pushes immutable **linux/amd64**
+images only when application changes reach `main`. It does not run on this Kind
+test branch. For initial Kind testing, use an already published immutable tag
+from a successful `main` workflow run.
+
+On an x86_64 Ubuntu VM, pull the exact CI image and load it into Kind:
+
+```bash
+export AWS_REGION=us-east-1
+export AWS_ACCOUNT_ID=542697646590
+export IMAGE_TAG='sha-<commit-sha-12>-<github-run-id>'
+export IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/robotshop-dev/catalogue:${IMAGE_TAG}"
+
+aws ecr get-login-password --region "$AWS_REGION" | \
+  docker login --username AWS --password-stdin \
+  "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+docker pull "$IMAGE_URI"
+kind load docker-image "$IMAGE_URI" --name robot-shop-test
+```
+
+Kubernetes manifests for Kind will use `imagePullPolicy: IfNotPresent`, allowing
+Kind to use this locally loaded image without granting local nodes AWS IAM
+credentials.
+
+### Apple Silicon / ARM64 warning
+
+If `uname -m` returns `aarch64`, the current CI images cannot run in Kind because
+the workflow currently publishes only `linux/amd64` images. Deploying one would
+produce an `exec format error`.
+
+Before deploying application images to an ARM64 Ubuntu VM, we must update the CI
+workflow to publish multi-architecture images (`linux/amd64` and `linux/arm64`),
+or run an x86_64 Ubuntu VM through emulation. Multi-architecture CI is the
+recommended solution and will also preserve the existing EKS compatibility.
+
+## 9. Install Argo CD in Kind
+
+After the cluster is healthy, install Argo CD with a reviewed, pinned chart
+version. First list the available versions:
+
+```bash
+helm repo add argo https://argoproj.github.io/argo-helm
+helm repo update
+helm search repo argo/argo-cd --versions | head -10
+```
+
+Set the reviewed version, then install it locally:
+
+```bash
+export ARGOCD_CHART_VERSION='<chart-version>'
+
+helm upgrade --install argocd argo/argo-cd \
+  --namespace argocd \
+  --create-namespace \
+  --version "$ARGOCD_CHART_VERSION" \
+  --wait \
+  --timeout 10m
+
+kubectl get pods -n argocd
+```
+
+Retrieve the initial password and access the UI only through a local port
+forward:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath='{.data.password}' | base64 -d && echo
+
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+```
+
+Open `https://localhost:8080` **inside the Ubuntu VM** and sign in with username
+`admin`. A self-signed certificate warning is expected for this local endpoint.
+
+> The Kind-specific Argo CD `Application`, Kind overlay, local Ingress, Atlas
+> secret reference, and service deployments are added in subsequent steps. Do
+> not apply the existing EKS-oriented application definition to this cluster.
+
+## Operations and troubleshooting
+
+| Symptom | Check / resolution |
+|---|---|
+| Docker permission denied | Run `newgrp docker` or log out/in after adding your user to the Docker group. |
+| Port 80/443 already in use | Use `sudo ss -ltnp '( sport = :80 or sport = :443 )'`, stop the conflicting process, then recreate the cluster. |
+| Pod is `ImagePullBackOff` | Confirm the image was loaded into Kind and that the manifest has the exact immutable tag plus `imagePullPolicy: IfNotPresent`. |
+| Pod has `exec format error` | The image architecture differs from the Ubuntu VM. Build and publish a multi-architecture image. |
+| Atlas connection timeout | Confirm the Ubuntu VM public IP is allowlisted in Atlas, the URI is TLS-enabled, and the database user has access. |
+| Argo CD is `OutOfSync` | Review the manifest diff first; initial application syncs will remain manual. |
+
+Useful commands:
+
+```bash
+kubectl get pods -A
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl describe pod <pod-name> -n <namespace>
+kubectl logs <pod-name> -n <namespace> --all-containers=true
+kind get clusters
+kind export logs --name robot-shop-test ./kind-logs
+```
+
+## Delete the local environment
+
+This deletes only the local Docker-based Kind cluster. It does not modify Atlas,
+ECR, AWS, EKS, or GitHub resources.
+
+```bash
+kind delete cluster --name robot-shop-test
+```
+
+## Promotion path
+
+```text
+codex/kind-test
+  → validate Kubernetes manifests, Argo CD, and Atlas connectivity locally
+  → create a future development branch
+  → create UAT on EKS and validate AWS integrations
+  → promote the reviewed configuration to production/main
+```
+
+## Official references
+
+- [Kind quick start](https://kind.sigs.k8s.io/docs/user/quick-start/)
+- [Kind node-image support](https://kind.sigs.k8s.io/docs/design/node-image/)
+- [Docker Engine installation for Ubuntu](https://docs.docker.com/engine/install/ubuntu/)
+- [Install kubectl on Linux](https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/)
+- [Install Helm](https://helm.sh/docs/intro/install/)
+- [MongoDB Atlas Free-cluster limitations](https://www.mongodb.com/docs/atlas/reference/free-shared-limitations/)
