@@ -23,6 +23,9 @@ concurrency:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY_PREFIX: robotshop-dev
+  # ECR stores a manifest list under one immutable tag. Docker and Kubernetes
+  # then select the matching image automatically from the node CPU architecture.
+  IMAGE_PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   build-and-publish:
@@ -48,15 +51,26 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      # QEMU is only needed for the ARM64 half of the multi-platform release
+      # build. Pull-request validation remains a fast native AMD64 build.
+      - name: Set up QEMU for ARM64 release builds
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: docker/setup-qemu-action@v4
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
       - name: Configure AWS credentials through GitHub OIDC
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -64,22 +78,39 @@ jobs:
           echo "ECR_REGISTRY=${registry}" >> "$GITHUB_ENV"
           aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
 
-      - name: Build image for pull-request validation
-        if: github.event_name == 'pull_request'
+      - name: Build image for non-release validation
+        # A manual run from any non-main branch validates a native AMD64 image,
+        # but cannot assume the AWS role or publish to ECR.
+        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@v7
+        with:
+          context: app/${{ matrix.service }}
+          load: true
+          platforms: linux/amd64
+          pull: true
+          push: false
+          tags: robotshop-ci/${{ matrix.service }}:${{ github.sha }}
+          # Read the matching main-branch cache, but do not allow a PR to
+          # publish a cache used by release builds.
+          cache-from: type=gha,scope=robotshop-${{ matrix.service }}
+
+      - name: Define immutable image tag
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          docker build --pull --platform linux/amd64 \
-            --tag "robotshop-ci/${{ matrix.service }}:${GITHUB_SHA}" \
-            "app/${{ matrix.service }}"
+          echo "IMAGE_TAG=sha-${GITHUB_SHA::12}-${GITHUB_RUN_ID}" >> "$GITHUB_ENV"
 
       - name: Build and push immutable ECR image
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          image_tag="sha-${GITHUB_SHA::12}-${GITHUB_RUN_ID}"
-          image_uri="${ECR_REGISTRY}/${ECR_REPOSITORY_PREFIX}/${{ matrix.service }}:${image_tag}"
-          docker build --pull --platform linux/amd64 --tag "$image_uri" "app/${{ matrix.service }}"
-          docker push "$image_uri"
-          echo "Published $image_uri"
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        uses: docker/build-push-action@v7
+        with:
+          context: app/${{ matrix.service }}
+          platforms: ${{ env.IMAGE_PLATFORMS }}
+          pull: true
+          push: true
+          tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_PREFIX }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+          # Retain a separate shared cache per service. This reduces repeated
+          # dependency installation without mixing cache layers between apps.
+          cache-from: type=gha,scope=robotshop-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=robotshop-${{ matrix.service }}

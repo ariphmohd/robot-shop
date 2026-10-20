@@ -431,10 +431,17 @@ network or VM changes; update the Atlas IP access list when connectivity fails.
 
 ## 8. Use CI-built ECR images in Kind
 
-The existing GitHub Actions workflow builds and pushes immutable **linux/amd64**
-images only when application changes reach `main`. It does not run on this Kind
-test branch. For initial Kind testing, use an already published immutable tag
-from a successful `main` workflow run.
+The container workflow is configured to publish one immutable ECR tag as a
+multi-architecture manifest list containing **linux/amd64** and **linux/arm64**
+images. Docker and Kubernetes resolve that tag to the image that matches the
+Kind node or EKS worker-node CPU architecture. This lets the same manifest use
+the same immutable tag on an x86_64 Ubuntu VM, an ARM64 Ubuntu VM, and future
+mixed EKS environments.
+
+The workflow pushes only when application changes reach `main`; it does not
+push images from this Kind test branch. Merge the reviewed workflow change to
+`main` and use the tag from that successful run. The existing GitHub OIDC role
+therefore remains restricted to the protected release branch.
 
 On an x86_64 Ubuntu VM, pull the exact CI image and load it into Kind:
 
@@ -456,16 +463,18 @@ Kubernetes manifests for Kind will use `imagePullPolicy: IfNotPresent`, allowing
 Kind to use this locally loaded image without granting local nodes AWS IAM
 credentials.
 
-### Apple Silicon / ARM64 warning
+### Verify the image architecture before deploying
 
-If `uname -m` returns `aarch64`, the current CI images cannot run in Kind because
-the workflow currently publishes only `linux/amd64` images. Deploying one would
-produce an `exec format error`.
+After a successful `main` workflow run, verify that the tag contains both CPU
+variants before loading it into Kind:
 
-Before deploying application images to an ARM64 Ubuntu VM, we must update the CI
-workflow to publish multi-architecture images (`linux/amd64` and `linux/arm64`),
-or run an x86_64 Ubuntu VM through emulation. Multi-architecture CI is the
-recommended solution and will also preserve the existing EKS compatibility.
+```bash
+docker buildx imagetools inspect "$IMAGE_URI"
+```
+
+The output must list `linux/amd64` and `linux/arm64`. On the Ubuntu VM, compare
+the desired platform with `uname -m` (`x86_64` maps to `amd64`; `aarch64` maps
+to `arm64`). A missing matching variant would cause an `exec format error`.
 
 ## 9. Install Argo CD in Kind
 
