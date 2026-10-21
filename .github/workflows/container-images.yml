@@ -7,7 +7,7 @@ on:
       - ".github/workflows/container-images.yml"
   push:
     branches:
-      - main
+      - codex/kind-test
     paths:
       - "app/**"
       - ".github/workflows/container-images.yml"
@@ -22,7 +22,7 @@ concurrency:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY_PREFIX: robotshop-dev
+  ECR_REPOSITORY_PREFIX: robotshop-kind
   # ECR stores a manifest list under one immutable tag. Docker and Kubernetes
   # then select the matching image automatically from the node CPU architecture.
   IMAGE_PLATFORMS: linux/amd64,linux/arm64
@@ -46,15 +46,16 @@ jobs:
           - shipping
           - user
           - web
+          - mysql
 
     steps:
       - name: Check out source
         uses: actions/checkout@v4
 
-      # QEMU is only needed for the ARM64 half of the multi-platform release
+      # QEMU is only needed for the ARM64 half of the multi-platform publishing
       # build. Pull-request validation remains a fast native AMD64 build.
-      - name: Set up QEMU for ARM64 release builds
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      - name: Set up QEMU for ARM64 publishing builds
+        if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
         uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64
@@ -63,14 +64,15 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Configure AWS credentials through GitHub OIDC
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
         uses: aws-actions/configure-aws-credentials@v4
         with:
+          allowed-account-ids: '542697646590'
           role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Log in to Amazon ECR
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
@@ -79,9 +81,9 @@ jobs:
           aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
 
       - name: Build image for non-release validation
-        # A manual run from any non-main branch validates a native AMD64 image,
+        # Runs outside codex/kind-test validate a native AMD64 image,
         # but cannot assume the AWS role or publish to ECR.
-        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+        if: github.event_name == 'pull_request' || github.ref != 'refs/heads/codex/kind-test'
         uses: docker/build-push-action@v7
         with:
           context: app/${{ matrix.service }}
@@ -90,19 +92,19 @@ jobs:
           pull: true
           push: false
           tags: robotshop-ci/${{ matrix.service }}:${{ github.sha }}
-          # Read the matching main-branch cache, but do not allow a PR to
-          # publish a cache used by release builds.
-          cache-from: type=gha,scope=robotshop-${{ matrix.service }}
+          # Read the matching Kind-branch cache, but do not allow a PR to
+          # publish a cache used by publishing builds.
+          cache-from: type=gha,scope=robotshop-kind-${{ matrix.service }}
 
       - name: Define immutable image tag
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
-          echo "IMAGE_TAG=sha-${GITHUB_SHA::12}-${GITHUB_RUN_ID}" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=sha-${GITHUB_SHA::12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
 
       - name: Build and push immutable ECR image
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
         uses: docker/build-push-action@v7
         with:
           context: app/${{ matrix.service }}
@@ -112,5 +114,5 @@ jobs:
           tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_PREFIX }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
           # Retain a separate shared cache per service. This reduces repeated
           # dependency installation without mixing cache layers between apps.
-          cache-from: type=gha,scope=robotshop-${{ matrix.service }}
-          cache-to: type=gha,mode=max,scope=robotshop-${{ matrix.service }}
+          cache-from: type=gha,scope=robotshop-kind-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=robotshop-kind-${{ matrix.service }}
