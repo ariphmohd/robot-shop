@@ -1,0 +1,70 @@
+# Instana tracing
+opentracing_load_tracer /usr/local/lib/libinstana_sensor.so /etc/instana-config.json;
+opentracing_propagate_context;
+
+server {
+    listen       8080;
+    server_name  localhost;
+
+    resolver kube-dns.kube-system.svc.cluster.local valid=5s ipv6=off;
+
+    proxy_http_version 1.1;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+        ssi    on;
+    }
+
+    location /images/ {
+        expires 5s;
+        root   /usr/share/nginx/html;
+        try_files $uri /images/placeholder.png;
+    }
+
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    location /api/catalogue/ {
+        set $catalogue_backend "${CATALOGUE_HOST}";
+        rewrite ^/api/catalogue/(.*)$ /$1 break;
+        proxy_pass http://$catalogue_backend:8080;
+    }
+
+    location /api/user/ {
+        set $user_backend "${USER_HOST}";
+        rewrite ^/api/user/(.*)$ /$1 break;
+        proxy_pass http://$user_backend:8080;
+    }
+
+    location /api/cart/ {
+        set $cart_backend "${CART_HOST}";
+        rewrite ^/api/cart/(.*)$ /$1 break;
+        proxy_pass http://$cart_backend:8080;
+    }
+
+    location /api/shipping/ {
+        set $shipping_backend "${SHIPPING_HOST}";
+        rewrite ^/api/shipping/(.*)$ /$1 break;
+        proxy_pass http://$shipping_backend:8080;
+    }
+
+    location /api/payment/ {
+        set $payment_backend "${PAYMENT_HOST}";
+        rewrite ^/api/payment/(.*)$ /$1 break;
+        proxy_pass http://$payment_backend:8080;
+    }
+
+    location /api/ratings/ {
+        set $ratings_backend "${RATINGS_HOST}";
+        rewrite ^/api/ratings/(.*)$ /$1 break;
+        proxy_pass http://$ratings_backend:80;
+    }
+
+    location /nginx_status {
+        stub_status on;
+        access_log off;
+    }
+}

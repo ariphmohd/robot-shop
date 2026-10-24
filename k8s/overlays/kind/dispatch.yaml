@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dispatch
+  labels:
+    app.kubernetes.io/name: dispatch
+    app.kubernetes.io/part-of: robot-shop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dispatch
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dispatch
+        app.kubernetes.io/part-of: robot-shop
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: dispatch
+        image: 542697646590.dkr.ecr.us-east-1.amazonaws.com/robotshop-kind/dispatch:sha-e6a29b6b98d1-39600051202-1
+        imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            cpu: 100m
+            memory: 64Mi
+          limits:
+            cpu: 500m
+            memory: 128Mi
+        env:
+        - name: AMQP_HOST
+          value: rabbitmq
+        - name: DISPATCH_ERROR_PERCENT
+          value: '0'

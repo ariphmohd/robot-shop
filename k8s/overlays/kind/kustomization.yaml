@@ -1,0 +1,35 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: robot-shop
+resources:
+- ../../base
+- catalogue-deployment.yaml
+- catalogue-service.yaml
+- redis.yaml
+- user-deployment.yaml
+- user-service.yaml
+- cart-deployment.yaml
+- cart-service.yaml
+- mysql.yaml
+- shipping-deployment.yaml
+- shipping-service.yaml
+- ratings-deployment.yaml
+- ratings-service.yaml
+- rabbitmq.yaml
+- payment.yaml
+- dispatch.yaml
+- web.yaml
+patches:
+- target:
+    version: v1
+    kind: Namespace
+    name: robot-shop
+  patch: "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: robot-shop\n  labels:\n\
+    \    app.kubernetes.io/environment: kind"
+configMapGenerator:
+- name: rabbitmq-config
+  files:
+  - rabbitmq.conf
+- name: web-config
+  files:
+  - default.conf.template=web-default.conf.template

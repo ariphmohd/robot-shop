@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogue
+  labels:
+    app.kubernetes.io/name: catalogue
+    app.kubernetes.io/part-of: robot-shop
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: catalogue
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
