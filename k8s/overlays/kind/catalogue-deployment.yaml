@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: catalogue
   annotations:
-    gitops-check: manual-sync
+    gitops-check: diff-demo-2
   labels:
     app.kubernetes.io/name: catalogue
     app.kubernetes.io/part-of: robot-shop
