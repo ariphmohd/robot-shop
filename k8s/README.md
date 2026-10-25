@@ -5,8 +5,10 @@
 The active GitOps source is **k8s/overlays/kind** on **codex/kind-test**.
 The Argo CD Application and AppProject are in **k8s/argocd/kind**.
 
-Argo CD reads the overlay and manages the existing robot-shop namespace
-resources through manual sync. Automatic sync and pruning are disabled.
+Argo CD reads the overlay and manages robot-shop resources. The Application
+bootstrap now declares automatic sync; applying it activates that policy.
+Pruning and self-healing remain disabled. See the
+[CI/CD activation guide](../docs/kind-ci-cd.md) before enabling automation.
 
 See the [full recreation and recovery runbook](../docs/kind-recovery.md)
 before installing, recovering storage, or rebuilding a cluster.
@@ -25,20 +27,24 @@ before installing, recovering storage, or rebuilding a cluster.
 2. Recreate missing Atlas/root Secrets outside Git.
 3. Load the exact ECR images into all Kind nodes.
 4. Install the pinned Argo CD and Traefik charts.
-5. Apply only the Kind bootstrap:
+5. For automatic deployment, apply only the Kind bootstrap after prerequisites
+   are ready. For a manual recovery preview, use the disabled-auto-sync bootstrap
+   procedure in the recovery runbook:
 
 ```bash
 kubectl --context kind-robot-shop-test apply -k k8s/argocd/kind
 ```
 
-6. Review Argo CD Diff and manually sync without Prune, Force, or Replace.
+6. Verify Argo CD Diff and Synced/Healthy; use manual sync only if auto-sync
+   was deliberately disabled for recovery. Leave Prune, Force, and Replace off.
 7. Restore backed-up database data if required and verify the application.
 
 ### Existing-cluster updates
 
 Commit manifest edits, push, review Argo Diff, and sync. Do not routinely apply
 the workload overlay outside Argo CD after adoption. A new image tag must be
-preloaded before the corresponding pods start.
+available through the ECR pull Secret or preloaded for manual recovery before
+the corresponding pods start.
 
 ### Secret references
 

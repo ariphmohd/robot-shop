@@ -2,7 +2,7 @@
 
 This branch, **codex/kind-test**, contains the working Robot Shop deployment
 validated on Ubuntu/WSL. It uses Kind, ECR-built images, external MongoDB Atlas,
-Argo CD with manual sync, and Traefik HTTP ingress.
+Argo CD, optional automatic CI/CD, and Traefik HTTP ingress.
 
 **Start with the [recreation and recovery runbook](docs/kind-recovery.md).**
 It covers workstation prerequisites, a fresh cluster, database credentials,
@@ -35,7 +35,7 @@ flowchart TB
     Payment --> RabbitMQ[RabbitMQ]
     RabbitMQ --> Dispatch[dispatch]
     Git[GitHub: codex/kind-test] --> Argo[Argo CD]
-    Argo -->|manual sync| Kind[robot-shop resources in Kind]
+    Argo -->|sync| Kind[robot-shop resources in Kind]
 ```
 
 The application has eleven pods: eight application services, MariaDB, Redis,
@@ -48,7 +48,7 @@ and RabbitMQ. Argo CD and Traefik run in separate namespaces.
 | [infra/kind/kind-config.yaml](infra/kind/kind-config.yaml) | Two-node cluster and host ports 80/443 |
 | [infra/kind/traefik-values.yaml](infra/kind/traefik-values.yaml) | Pinned controller installation values |
 | [k8s/overlays/kind](k8s/overlays/kind/) | Application configuration watched by Argo CD |
-| [k8s/argocd/kind](k8s/argocd/kind/) | Kind AppProject and manually synced Application |
+| [k8s/argocd/kind](k8s/argocd/kind/) | Kind AppProject and Application sync policy |
 | [.github/workflows/container-images.yml](.github/workflows/container-images.yml) | Nine-image ECR publishing pipeline |
 | [app](app/) | Application source, Dockerfiles, and database seed scripts |
 | [scripts/kind](scripts/kind/) | Manual recovery helpers |
@@ -68,6 +68,12 @@ k8s/argocd/application-dev.yaml to this Kind environment.
 - Catalogue/product queries, account order persistence, cart/Redis operations,
   shipping/MariaDB calculations, ratings, and RabbitMQ dispatch have been exercised.
 
+## Automatic source-to-cluster deployment
+
+See [the CI/CD activation guide](docs/kind-ci-cd.md) for changed-service builds,
+GitHub-hosted image-tag commits, direct ECR pulls, local credential refresh,
+and Argo automatic sync. Manifest publication is gated by KIND_CD_ENABLED.
+
 ## Daily operation
 
 Open **http://localhost**. A storefront port-forward is no longer needed.
@@ -79,8 +85,10 @@ kubectl --context kind-robot-shop-test -n argocd get application robot-shop-kind
 ```
 
 To change workloads: edit explicit files, review the diff, commit/push to
-codex/kind-test, review Argo CD Diff, and manually sync. Automatic sync and
-pruning remain disabled. Load a newly referenced image into Kind before sync.
+codex/kind-test, review Argo CD Diff, and sync according to the active Application policy.
+The CI/CD extension prepares automatic sync with pruning/self-healing disabled;
+it takes effect only after explicit activation. Configure ECR pull credentials
+before syncing new image tags; see the activation guide.
 
 ## Secrets and data
 

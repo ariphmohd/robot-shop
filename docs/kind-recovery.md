@@ -4,6 +4,13 @@ Validated configuration: 25 October 2026. Run commands in **Ubuntu/WSL Bash**,
 not PowerShell, from the repository root unless otherwise stated. Copy commands
 only, not terminal prompts or example output.
 
+For automatic source-to-cluster deployment, see [the CI/CD guide](kind-ci-cd.md).
+The Application bootstrap now contains auto-sync settings. The recovery procedure
+below deliberately starts it with auto-sync disabled for a manual preview.
+The overlay now references the external `robot-shop/ecr-pull` Secret. Follow
+sections 1–3 of the CI/CD guide to recreate that Secret and its WSL refresh
+timer before syncing. Manual image preloading below remains a recovery option.
+
 ## 1. Choose the correct recovery path
 
 | Situation | What to do |
@@ -359,7 +366,14 @@ certificate.
 
 ~~~bash
 kubectl --context kind-robot-shop-test get ingressclass
-kubectl --context kind-robot-shop-test apply -k k8s/argocd/kind
+kubectl --context kind-robot-shop-test apply -f k8s/argocd/kind/project.yaml
+(
+  set -o pipefail
+  kubectl --context kind-robot-shop-test create --dry-run=client \
+    -f k8s/argocd/kind/application.yaml -o json |
+    python3 -c 'import json,sys; a=json.load(sys.stdin); a["spec"]["syncPolicy"]["automated"]["enabled"]=False; json.dump(a,sys.stdout)' |
+    kubectl --context kind-robot-shop-test apply -f -
+)
 kubectl --context kind-robot-shop-test -n argocd get application robot-shop-kind
 ~~~
 
@@ -394,7 +408,9 @@ In robot-shop-kind:
 Do not sync before loading images and creating Secrets. Dispatch retries until
 RabbitMQ starts; readiness waits for application dependencies. Do not delete a
 PVC or restart MariaDB mid-import just because initialization is taking time.
-Routine updates now go through Git/Argo rather than kubectl apply.
+Routine updates go through Git/Argo rather than kubectl apply. After recovery
+validation, follow the CI/CD guide to re-enable automation if desired. Applying
+the unmodified bootstrap activates its enabled=true policy.
 
 ## 8. Acceptance checks
 
@@ -546,8 +562,22 @@ PVC after an ordinary pod restart.
 
 1. Complete sections 3–7; allow mysql-0 to initialize and become Ready.
 2. Confirm the intended context and backup.
-3. Stop application writes during restore. Auto-sync must remain disabled.
+3. Stop application writes during restore. Pause CI deployment through
+   KIND_CD_ENABLED=false and disable Argo auto-sync as shown below.
 4. Validate the import before resuming users.
+
+If auto-sync was active, record its state and disable it before scaling writers:
+
+~~~bash
+kubectl --context kind-robot-shop-test -n argocd patch \
+  application robot-shop-kind --type merge \
+  -p '{"spec":{"syncPolicy":{"automated":{"enabled":false}}}}'
+~~~
+
+Also wait for any in-progress CI deployment to complete or cancel it deliberately.
+After recovery, re-enable the policy only if that was the intended prior mode;
+see the CI/CD guide. Do not rely on disabling the workflow variable alone to
+pause Argo's response to direct manifest commits.
 
 Choose the filename printed by the backup helper:
 
@@ -817,7 +847,9 @@ Value: arn:aws:iam::542697646590:role/robotshop-kind-github-actions-ecr-push
 Do not add AWS access keys to Git. Jobs using a GitHub Environment have a
 different subject shape and need a separately reviewed trust policy.
 
-Run the publishing workflow on codex/kind-test. Manual workflow_dispatch must
+Run the Build and deploy Robot Shop to Kind workflow on codex/kind-test.
+Keep KIND_CD_ENABLED=false during publishing-only recovery so image publication
+does not also deploy while restoration is in progress. Manual workflow_dispatch must
 also exist on the default branch for GitHub's Run workflow option. Otherwise an
 approved change to app/** or the workflow pushed to codex/kind-test triggers its
 push event.

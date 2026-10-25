@@ -25,8 +25,27 @@ patches:
     version: v1
     kind: Namespace
     name: robot-shop
-  patch: "apiVersion: v1\nkind: Namespace\nmetadata:\n  name: robot-shop\n  labels:\n\
-    \    app.kubernetes.io/environment: kind"
+  patch: |-
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: robot-shop
+      labels:
+        app.kubernetes.io/environment: kind
+- target:
+    kind: Deployment
+  patch: |
+    - op: add
+      path: /spec/template/spec/imagePullSecrets
+      value:
+      - name: ecr-pull
+- target:
+    kind: StatefulSet
+  patch: |
+    - op: add
+      path: /spec/template/spec/imagePullSecrets
+      value:
+      - name: ecr-pull
 configMapGenerator:
 - name: rabbitmq-config
   files:
