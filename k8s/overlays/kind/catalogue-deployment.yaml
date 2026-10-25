@@ -2,6 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: catalogue
+  annotations:
+    gitops-check: manual-sync
   labels:
     app.kubernetes.io/name: catalogue
     app.kubernetes.io/part-of: robot-shop
