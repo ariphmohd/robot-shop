@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: robot-shop-kind
+  namespace: argocd
+  labels:
+    app.kubernetes.io/part-of: robot-shop
+    app.kubernetes.io/environment: kind
+spec:
+  project: robot-shop-kind
+  source:
+    repoURL: https://github.com/ariphmohd/robot-shop.git
+    targetRevision: codex/kind-test
+    path: k8s/overlays/kind
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: robot-shop
+  syncPolicy:
+    syncOptions:
+    - CreateNamespace=true
