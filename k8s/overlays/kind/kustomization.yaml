@@ -19,6 +19,7 @@ resources:
 - payment.yaml
 - dispatch.yaml
 - web.yaml
+- web-ingress.yaml
 patches:
 - target:
     version: v1

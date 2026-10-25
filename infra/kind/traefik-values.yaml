@@ -1,0 +1,53 @@
+# Kind ingress controller values for traefik/traefik chart 42.1.3.
+# Only the control-plane node has host ports 80/443 mapped by Kind.
+deployment:
+  kind: Deployment
+  replicas: 1
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 0
+    maxUnavailable: 1
+nodeSelector:
+  kubernetes.io/hostname: robot-shop-test-control-plane
+tolerations:
+- key: node-role.kubernetes.io/control-plane
+  operator: Exists
+  effect: NoSchedule
+service:
+  spec:
+    type: ClusterIP
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    hostPort: 443
+ingressClass:
+  enabled: true
+  name: traefik
+  isDefaultClass: false
+providers:
+  kubernetesCRD:
+    enabled: false
+  kubernetesIngress:
+    enabled: true
+    ingressClass: traefik
+    namespaces:
+    - robot-shop
+    publishedService:
+      enabled: false
+    ingressEndpoint:
+      ip: 127.0.0.1
+  kubernetesGateway:
+    enabled: false
+gateway:
+  enabled: false
+api:
+  dashboard: false
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
