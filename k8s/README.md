@@ -1,18 +1,56 @@
-# Kubernetes GitOps manifests
+# Kubernetes configuration
 
-Argo CD watches `k8s/overlays/dev` on the `main` branch and deploys it to the
-`robot-shop` namespace in the development EKS cluster.
+## Working Kind environment
 
-## Bootstrap order
+The active GitOps source is **k8s/overlays/kind** on **codex/kind-test**.
+The Argo CD Application and AppProject are in **k8s/argocd/kind**.
 
-1. Install Argo CD with Helm into the `argocd` namespace.
-2. Apply `k8s/argocd` to create the `AppProject` and `Application` objects.
-3. In the Argo CD UI, review and manually sync `robot-shop-dev`.
-4. Add application workloads to `base` and environment-specific configuration
-   to `overlays/dev`.
+Argo CD reads the overlay and manages the existing robot-shop namespace
+resources through manual sync. Automatic sync and pruning are disabled.
 
-Automated sync, pruning, and self-healing are intentionally not enabled during
-initial setup. They will be enabled after a reviewed successful deployment.
+See the [full recreation and recovery runbook](../docs/kind-recovery.md)
+before installing, recovering storage, or rebuilding a cluster.
 
-Do not add secret values to this directory. Runtime secrets will be sourced
-from AWS Secrets Manager in a later step.
+### Entry points
+
+- base/: shared namespace definition; contains no application workloads.
+- overlays/kind/: all validated local application resources.
+- argocd/kind/: Kind-only Application and Project bootstrap.
+- overlays/dev/ and the top-level argocd/*.yaml files: older main/dev scaffold,
+  not the Kind bootstrap.
+
+### Fresh-cluster order
+
+1. Create/reuse the cluster and verify local storage.
+2. Recreate missing Atlas/root Secrets outside Git.
+3. Load the exact ECR images into all Kind nodes.
+4. Install the pinned Argo CD and Traefik charts.
+5. Apply only the Kind bootstrap:
+
+```bash
+kubectl --context kind-robot-shop-test apply -k k8s/argocd/kind
+```
+
+6. Review Argo CD Diff and manually sync without Prune, Force, or Replace.
+7. Restore backed-up database data if required and verify the application.
+
+### Existing-cluster updates
+
+Commit manifest edits, push, review Argo Diff, and sync. Do not routinely apply
+the workload overlay outside Argo CD after adoption. A new image tag must be
+preloaded before the corresponding pods start.
+
+### Secret references
+
+| Resource | Existing Secret | Key |
+|---|---|---|
+| catalogue Deployment | catalogue-mongodb | MONGO_URL |
+| user Deployment | user-mongodb | MONGO_URL |
+| mysql StatefulSet | mysql-auth | MYSQL_ROOT_PASSWORD |
+
+The Kind AppProject does not permit applying Secret objects. Values remain
+manually managed; this does not mean Argo CD's controller service account cannot
+read Secrets. Never add a secret-value export to this tree.
+
+The MariaDB claim comes from a StatefulSet volumeClaimTemplate. It preserves
+data across pod replacement while the claim survives; it is not a backup.

@@ -91,3 +91,8 @@ Thumbs.db
 .classpath
 .project
 .settings/
+
+# Local recovery outputs; prefer protected storage outside this checkout.
+/backups/
+/recovery-private/
+/kind-logs/
