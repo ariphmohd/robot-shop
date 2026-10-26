@@ -238,3 +238,9 @@ Reapplying the bootstrap restores its declared auto-sync enabled setting.
 - [Kind private registries](https://kind.sigs.k8s.io/docs/user/private-registries/)
 - [GitHub token triggering behavior](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
 - [Argo automatic sync](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/)
+
+## Image storage retention
+
+See [ECR retention](ecr-retention.md) for a preview-first policy retaining three
+CI image versions per repository and cleaning unreferenced untagged images.
+The policy requires separate activation in AWS; committing it does not enable deletion.
