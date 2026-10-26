@@ -19,7 +19,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: web
-        image: 542697646590.dkr.ecr.us-east-1.amazonaws.com/robotshop-kind/web:sha-e6a29b6b98d1-39600051202-1
+        image: 542697646590.dkr.ecr.us-east-1.amazonaws.com/robotshop-kind/web:sha-65cc6d5275a5-40263211602-1
         imagePullPolicy: IfNotPresent
         resources:
           requests:
