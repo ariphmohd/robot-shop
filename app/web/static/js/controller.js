@@ -527,10 +527,20 @@
             }).catch(function(e) {});
         }
 
+        $scope.catalogueLoading = true;
+        $scope.catalogueError = false;
+        $scope.retryCatalogue = loadAllProducts;
+
         function loadAllProducts() {
-            $http.get('/api/catalogue/products').then(function(res) {
+            $scope.catalogueLoading = true;
+            $scope.catalogueError = false;
+            return $http.get('/api/catalogue/products').then(function(res) {
                 $scope.data.allProducts = res.data || [];
-            }).catch(function(e) {});
+            }).catch(function() {
+                $scope.catalogueError = true;
+            }).finally(function() {
+                $scope.catalogueLoading = false;
+            });
         }
 
         function getUniqueid() {

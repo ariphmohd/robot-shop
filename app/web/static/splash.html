@@ -21,7 +21,26 @@
             <button type="button" ng-click="filterCategory('AI Modules')" ng-class="{'active': selectedCategory === 'AI Modules'}">AI modules</button>
             <button type="button" ng-click="filterCategory('Accessories')" ng-class="{'active': selectedCategory === 'Accessories'}">Accessories</button>
         </div>
-        <div class="atelier-product-grid">
+        <div class="atelier-collection-status" role="status" aria-live="polite">
+            <p ng-if="catalogueLoading">Finding your next robot&hellip;</p>
+            <p ng-if="!catalogueLoading && !catalogueError && (data.allProducts | filter:categoryFilter).length > 0">
+                Showing {{ (data.allProducts | filter:categoryFilter | limitTo:8).length }} of
+                {{ (data.allProducts | filter:categoryFilter).length }} robots
+                <span ng-if="selectedCategory !== 'All'">in {{ selectedCategory }}</span>
+            </p>
+            <div class="atelier-collection-message" ng-if="!catalogueLoading && catalogueError">
+                <h3>We couldn&rsquo;t load the collection.</h3>
+                <p>Please try again in a moment.</p>
+                <button type="button" class="atelier-collection-reset" ng-click="retryCatalogue()">Try again</button>
+            </div>
+            <div class="atelier-collection-message" ng-if="!catalogueLoading && !catalogueError && (data.allProducts | filter:categoryFilter).length === 0">
+                <h3>No robots to show here yet.</h3>
+                <p ng-if="selectedCategory !== 'All'">Explore the full collection to find your next companion.</p>
+                <p ng-if="selectedCategory === 'All'">Check back soon for new additions to the collection.</p>
+                <button type="button" class="atelier-collection-reset" ng-if="selectedCategory !== 'All'" ng-click="filterCategory('All')">Show all robots</button>
+            </div>
+        </div>
+        <div class="atelier-product-grid" ng-if="!catalogueLoading && !catalogueError">
             <article class="atelier-product-card" ng-repeat="prod in data.allProducts | filter:categoryFilter | limitTo:8">
                 <button type="button" class="atelier-heart" ng-class="{'active': isInWishlist(prod.sku)}" ng-click="toggleWishlist(prod, $event);" aria-label="Save {{ prod.name }}">♡</button>
                 <a href="/product/{{ prod.sku }}" class="atelier-product-image"><img ng-src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}"></a>
