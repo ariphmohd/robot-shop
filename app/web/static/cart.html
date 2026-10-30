@@ -38,16 +38,16 @@
 <div class="shop-cart-item-copy">
 <p class="shop-sku">MODEL / {{ item.sku }}</p>
 <a href="/product/{{ item.sku }}" class="shop-cart-item-title">{{ item.name }}</a>
-<p class="shop-muted">&euro;{{ (item.price || (item.subtotal / item.qty)).toFixed(2) }} each</p>
+<p class="shop-muted">{{ money((item.price || (item.subtotal / item.qty))) }} each</p>
 <div class="shop-inline-actions">
 <button type="button" class="shop-text-button" ng-click="saveForLater(item)">Save for later</button>
 <button type="button" class="shop-text-button shop-danger" ng-click="removeItem(item)">Remove</button>
 </div>
 </div>
-<strong class="shop-line-total">&euro;{{ item.subtotal.toFixed(2) }}</strong>
+<strong class="shop-line-total">{{ money(item.subtotal) }}</strong>
 </article>
 <div class="shop-panel-footer">
-<button type="button" class="btn btn-purchase" ng-click="buy()">Continue to delivery &rarr;</button>
+<button type="button" class="btn btn-purchase" ng-click="buy()">Buy &amp; choose delivery &rarr;</button>
 </div>
 </div>
     </div>
@@ -56,11 +56,11 @@
 <div class="price-breakdown-body">
 <div class="price-row">
 <span>Cart total</span>
-<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+<span>{{ money(data.cart.total) }}</span>
 </div>
 <div class="price-row">
 <span>Included tax</span>
-<span>&euro;{{ data.cart.tax.toFixed(2) }}</span>
+<span>{{ money(data.cart.tax) }}</span>
 </div>
 <div class="price-row">
 <span>Shipping</span>
@@ -68,10 +68,10 @@
 </div>
 <div class="price-row total-row">
 <span>Total</span>
-<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+<span>{{ money(data.cart.total) }}</span>
 </div>
 </div>
-<p class="shop-summary-note">Choose your destination to calculate shipping.</p>
+<p class="shop-summary-note">Choose your destination to calculate shipping. <span ng-if="regionState.current.currency !== 'EUR'">Converted prices are estimates; demo orders are recorded in EUR.</span></p>
 </aside>
 </div>
 </section>

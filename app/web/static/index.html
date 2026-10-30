@@ -50,13 +50,12 @@
                     </div>
                 </a>
 
-                <!-- Deliver-to Location Widget -->
-                <div class="header-deliver-to" title="Precision Dispatch to Global Regions">
-                    <span class="deliver-icon">📍</span>
-                    <div class="deliver-text">
-                        <span class="deliver-label">Deliver to</span>
-                        <span class="deliver-location">Global Freight ▾</span>
-                    </div>
+                <div class="region-selector" ng-cloak>
+                    <label for="store-region">Shopping region</label>
+                    <select id="store-region" ng-model="regionState.selectedId" ng-change="changeRegion()"
+                        ng-options="region.id as region.label disable when (region.id !== 'EURO' && !regionState.available) for region in regionState.options"
+                        aria-describedby="currency-status">
+                    </select>
                 </div>
 
                 <!-- Central Wide Search Bar with Suggestions -->
@@ -87,7 +86,7 @@
                             <span class="suggestion-icon">🔍</span>
                             <div style="flex: 1;">
                                 <strong>{{ sug.name }}</strong>
-                                <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;" ng-if="sug.price">(&euro;{{ sug.price.toFixed(2) }})</span>
+                                <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;" ng-if="sug.price">({{ money(sug.price) }})</span>
                             </div>
                             <span style="font-size: 10px; background: var(--bg-secondary); padding: 2px 6px; border-radius: 3px; color: var(--text-muted);">{{ sug.type }}</span>
                         </div>
@@ -169,6 +168,22 @@
         </nav>
     </header>
 
+    <div id="currency-status" class="currency-status" role="status" aria-live="polite" ng-cloak>
+        <div class="container">
+            <span ng-if="regionState.loading">Loading currency reference rates…</span>
+            <span ng-if="!regionState.loading && !regionState.failed">
+                Prices in <strong>{{ regionState.current.currency }}</strong>.
+                <span ng-if="regionState.current.currency !== 'EUR'">Converted estimates · ECB rates {{ regionState.asOf }} · Demo checkout in EUR.</span>
+                <span ng-if="regionState.current.currency === 'EUR'">Choose your shopping region to see converted prices.</span>
+                <span ng-if="regionState.stale && regionState.current.currency !== 'EUR'">These reference rates are over a week old.</span>
+            </span>
+            <span ng-if="regionState.failed">Currency conversion is unavailable. Prices are shown in EUR.
+                <button type="button" ng-click="retryCurrencyRates()">Try again</button>
+            </span>
+            <span ng-if="regionState.storageUnavailable">Your selection applies to this visit only.</span>
+        </div>
+    </div>
+
     <!-- Main Router View Area -->
     <main class="container" style="flex: 1;">
         <div ng-view></div>
@@ -177,9 +192,9 @@
     <div class="cart-drawer-backdrop" ng-if="cartDrawerOpen" ng-click="closeCartDrawer();"></div>
     <aside class="cart-drawer" ng-class="{'is-open': cartDrawerOpen}" aria-label="Shopping cart" aria-hidden="{{ !cartDrawerOpen }}">
         <div class="cart-drawer-header"><div><span class="eyebrow">YOUR SELECTION</span><h2>Cart <span>({{ getCartCount(data.cart) }})</span></h2></div><button type="button" class="drawer-close" ng-click="closeCartDrawer();" aria-label="Close cart">×</button></div>
-        <div class="cart-drawer-items" ng-if="data.cart.items.length"><div class="drawer-cart-item" ng-repeat="item in data.cart.items" ng-if="item.sku !== 'SHIP'"><img ng-src="/images/{{ item.sku }}.png" alt="{{ item.name }}"/><div><strong>{{ item.name }}</strong><span>Quantity {{ item.qty }}</span></div><b>€{{ (item.subtotal || 0).toFixed(2) }}</b></div></div>
+        <div class="cart-drawer-items" ng-if="data.cart.items.length"><div class="drawer-cart-item" ng-repeat="item in data.cart.items" ng-if="item.sku !== 'SHIP'"><img ng-src="/images/{{ item.sku }}.png" alt="{{ item.name }}"/><div><strong>{{ item.name }}</strong><span>Quantity {{ item.qty }}</span></div><b>{{ money((item.subtotal || 0)) }}</b></div></div>
         <div class="cart-drawer-empty" ng-if="!data.cart.items.length">Your cart is waiting for its first intelligent companion.</div>
-        <div class="cart-drawer-footer"><div><span>Estimated total</span><strong>€{{ (data.cart.total || 0).toFixed(2) }}</strong></div><a href="/cart" class="btn btn-purchase drawer-checkout" ng-click="closeCartDrawer();">View cart &amp; checkout</a></div>
+        <div class="cart-drawer-footer"><div><span>Estimated total</span><strong>{{ money((data.cart.total || 0)) }}</strong></div><a href="/cart" class="btn btn-purchase drawer-checkout" ng-click="closeCartDrawer();">View cart &amp; checkout</a></div>
     </aside>
 
     <!-- Floating Comparison Bar (When 1+ robots pinned) -->
@@ -216,7 +231,7 @@
                             <div style="text-align: center;">
                                 <img src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}" style="max-height: 90px; object-fit: contain; margin-bottom: 8px;"/>
                                 <div style="font-weight: 700; font-size: 15px;">{{ prod.name }}</div>
-                                <div style="color: var(--text-primary); font-size: 17px; font-weight: 800; margin: 4px 0;">&euro;{{ prod.price.toFixed(2) }}</div>
+                                <div style="color: var(--text-primary); font-size: 17px; font-weight: 800; margin: 4px 0;">{{ money(prod.price) }}</div>
                                 <button type="button" class="btn btn-primary btn-sm" ng-click="quickAddToCart(prod); closeCompareModal();" ng-disabled="prod.instock === 0" style="margin-top: 6px; width: 100%;">
                                     {{ prod.instock === 0 ? 'Backorder' : 'Add to Cart' }}
                                 </button>
@@ -248,7 +263,10 @@
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-route.js"></script>
 <script src="/js/auto-complete.js"></script>
+<script src="/js/currency.js"></script>
 <script src="/js/controller.js"></script>
+<script src="/js/region.js"></script>
+<script src="/js/checkout.js"></script>
 
 </body>
 </html>

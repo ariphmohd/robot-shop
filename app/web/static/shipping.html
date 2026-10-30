@@ -1,65 +1,40 @@
 <section class="shop-page" aria-labelledby="shipping-title">
-<header class="shop-page-heading">
-<div>
-<p class="eyebrow">THE NEXT STEP</p>
-<h1 id="shipping-title">Where to next?</h1>
-</div>
-<a href="/cart" class="atelier-link">Back to cart</a>
-</header>
-<nav class="shop-checkout-steps" aria-label="Checkout progress">
-<a href="/cart">1 / Cart</a>
-<span aria-current="step">2 / Delivery</span>
-<span class="shop-step-future">3 / Review</span>
-</nav>
-    <div class="shop-empty" ng-if="!data.cart || !data.cart.total">
-<h2>Start with a robot you love.</h2>
-<p>Add an item before choosing delivery.</p>
-<a href="/search" class="btn btn-primary">Explore robots</a>
-</div>
-    <div class="cart-layout" ng-show="data.cart && data.cart.total">
-<div class="cart-items-card shop-form-panel">
-<h2>Delivery destination</h2>
-<p class="shop-muted">Select a country and city to get your shipping estimate.</p>
-<div class="shop-delivery-form">
+<header class="shop-page-heading"><div><p class="eyebrow">YOUR NEXT DESTINATION</p><h1 id="shipping-title">Where should it arrive?</h1></div><a href="/cart" class="atelier-link">Back to cart</a></header>
+<nav class="shop-checkout-steps" aria-label="Checkout progress"><a href="/cart">1 / Cart</a><span aria-current="step">2 / Delivery</span><span class="shop-step-future">3 / Review</span></nav>
+<div class="shop-empty" ng-if="!productTotal()"><h2>Start with a robot you love.</h2><p>Add an item before choosing delivery.</p><a href="/search" class="btn btn-primary">Explore robots</a></div>
+<div class="cart-layout" ng-if="productTotal()">
+<form name="deliveryForm" class="cart-items-card shop-form-panel" ng-submit="confirmShipping(deliveryForm)" novalidate>
+<h2>Delivery address</h2><p class="shop-muted">Choose your country and city, then tell us your street and flat or house number.</p>
+<div class="shop-notice" role="alert" ng-if="data.message">{{ data.message }}</div>
+<fieldset class="shop-address-fields" ng-disabled="data.busy">
 <div class="form-group">
 <label class="form-label" for="destination-country">Country</label>
-<select id="destination-country" ng-change="countryChanged()" ng-model="data.selectedCountry" ng-options="opt.name for opt in data.countries track by opt.code" class="form-control">
-<option value="">Select a country</option>
-</select>
+<select id="destination-country" name="country" ng-change="countryChanged()" ng-model="data.country" ng-options="country as country.name for country in data.countries track by country.code" class="form-control" ng-disabled="data.loadingCountries" required autocomplete="country-name"><option value="">Select a country</option></select>
+<p class="shop-field-hint" role="status" ng-if="data.loadingCountries">Loading countries…</p>
+<button type="button" class="shop-text-button" ng-if="!data.loadingCountries && !data.countries.length" ng-click="loadCountries()">Retry countries</button>
 </div>
 <div class="form-group">
-<label class="form-label" for="location">City</label>
-<input id="location" type="text" placeholder="Start typing a city…" ng-model="data.selectedLocation" ng-disabled="data.disableCity" class="form-control" autocomplete="off">
-<p class="shop-field-hint">Choose a city from the suggestions.</p>
+<label class="form-label" for="destination-city">City</label>
+<input id="destination-city" name="city" type="text" placeholder="Type at least 3 letters" ng-model="data.cityName" ng-change="cityChanged()" ng-disabled="!data.country" class="form-control" autocomplete="off" maxlength="100" required aria-describedby="city-help" aria-controls="city-suggestions">
+<p id="city-help" class="shop-field-hint" role="status">{{ data.city ? 'Selected: ' + data.city.name : 'Choose a city from the suggestions below.' }}</p>
+<p class="shop-field-hint" ng-if="data.findingCities" role="status">Finding cities…</p>
+<p class="shop-field-hint" ng-if="data.searched && !data.cities.length" role="status">No matching cities. Try a nearby city or a different spelling.</p>
+<ul id="city-suggestions" class="shop-city-suggestions" ng-if="data.cities.length" aria-label="Matching cities"><li ng-repeat="city in data.cities track by city.uuid"><button type="button" ng-click="selectCity(city)">{{ city.name }}<span ng-if="city.region"> · {{ city.region }}</span></button></li></ul>
 </div>
-<button type="button" class="btn btn-primary" ng-click="calcShipping()" ng-disabled="data.disableCalc">Calculate shipping</button>
-<div class="shop-shipping-quote" ng-if="data.shipping">
-<p class="eyebrow">YOUR SHIPPING ESTIMATE</p>
-<div class="shop-price-row">
-<strong class="shop-price">&euro;{{ data.shipping.cost.toFixed(2) }}</strong>
-<span class="shop-muted">{{ data.shipping.distance }} km</span>
+<div class="form-group"><label class="form-label" for="delivery-street">Street address</label><input id="delivery-street" name="street" type="text" class="form-control" ng-model="data.street" required ng-minlength="3" maxlength="160" autocomplete="address-line1" placeholder="Street, road or building name"></div>
+<div class="shop-address-grid">
+<div class="form-group"><label class="form-label" for="delivery-flat">Flat / house number</label><input id="delivery-flat" name="flat" type="text" class="form-control" ng-model="data.flat" required maxlength="40" autocomplete="address-line2" placeholder="Flat 4B or house 12"></div>
+<div class="form-group"><label class="form-label" for="delivery-postcode">Postal code <span class="shop-muted">(optional)</span></label><input id="delivery-postcode" name="postalCode" type="text" class="form-control" ng-model="data.postalCode" maxlength="20" autocomplete="postal-code"></div>
 </div>
-<button type="button" class="btn btn-purchase" ng-click="confirmShipping()">Continue to review &rarr;</button>
-</div>
-</div>
-</div>
-<aside class="price-details-card" aria-label="Order summary">
-<h2 class="price-details-header">Order summary</h2>
-<div class="price-breakdown-body">
-<div class="price-row">
-<span>Cart total</span>
-<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
-</div>
-<div class="price-row">
-<span>Shipping estimate</span>
-<span>{{ data.shipping ? ('€' + data.shipping.cost.toFixed(2)) : 'Not calculated' }}</span>
-</div>
-<div class="price-row total-row">
-<span>Estimated total</span>
-<span>&euro;{{ (data.cart.total + (data.shipping ? data.shipping.cost : 0)).toFixed(2) }}</span>
-</div>
-</div>
-<p class="shop-summary-note">The confirmed shipping charge will appear in your order.</p>
-</aside>
-</div>
-</section>
+<p class="shop-field-hint" ng-if="data.calculating" role="status">Calculating delivery…</p>
+<button type="button" class="shop-text-button" ng-if="data.city && !data.shipping && !data.calculating" ng-click="calcShipping()">Retry shipping calculation</button>
+<div class="shop-shipping-quote" ng-if="data.shipping"><p class="eyebrow">DELIVERY ESTIMATE</p><strong class="shop-price">{{ money(data.shipping.cost) }}</strong><p class="shop-field-hint">3–5 business days after your demo order is confirmed.</p></div>
+<button type="submit" class="btn btn-purchase shop-full-width" ng-disabled="data.busy || data.calculating">{{ data.busy ? 'Confirming delivery…' : 'Continue to review →' }}</button>
+</fieldset>
+</form>
+<aside class="price-details-card" aria-label="Order summary"><h2 class="price-details-header">Order summary</h2><div class="price-breakdown-body">
+<div class="price-row"><span>Products</span><span>{{ money(productTotal()) }}</span></div>
+<div class="price-row"><span>Shipping estimate</span><span>{{ data.shipping ? money(data.shipping.cost) : 'Select a city' }}</span></div>
+<div class="price-row total-row"><span>Estimated total</span><span>{{ money(productTotal() + (data.shipping ? data.shipping.cost : 0)) }}</span></div>
+</div><p class="shop-summary-note">Demo checkout in EUR. Delivery dates are estimates; no physical shipment is booked.</p></aside>
+</div></section>

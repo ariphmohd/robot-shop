@@ -30,7 +30,7 @@
 </div>
             <div class="shop-purchase-panel">
 <div class="shop-price-row">
-<strong class="shop-price">&euro;{{ data.product.price.toFixed(2) }}</strong>
+<strong class="shop-price">{{ money(data.product.price) }}</strong>
 <span class="stock-badge stock-instock" ng-if="data.product.instock > 0">{{ data.product.instock }} in stock</span>
 <span class="stock-badge stock-out" ng-if="data.product.instock === 0">Out of stock</span>
 </div>
@@ -81,7 +81,7 @@
 <img ng-src="/images/{{ rel.sku }}.png" alt="{{ rel.name }}" loading="lazy">
 <div>
 <h3>{{ rel.name }}</h3>
-<span>&euro;{{ rel.price.toFixed(2) }}</span>
+<span>{{ money(rel.price) }}</span>
 </div>
 </a>
 </div>

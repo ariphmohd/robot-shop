@@ -32,19 +32,19 @@
 </label>
                 <label class="filter-option">
 <input type="radio" name="priceRange" ng-checked="filters.priceRange === 'under500'" ng-click="setPriceFilter('under500')">
-<span>Under &euro;500</span>
+<span>Under {{ money(500) }}</span>
 </label>
                 <label class="filter-option">
 <input type="radio" name="priceRange" ng-checked="filters.priceRange === '500to1500'" ng-click="setPriceFilter('500to1500')">
-<span>&euro;500 – &euro;1,500</span>
+<span>{{ money(500) }} – {{ money(1500) }}</span>
 </label>
                 <label class="filter-option">
 <input type="radio" name="priceRange" ng-checked="filters.priceRange === '1500to3000'" ng-click="setPriceFilter('1500to3000')">
-<span>&euro;1,500 – &euro;3,000</span>
+<span>{{ money(1500) }} – {{ money(3000) }}</span>
 </label>
                 <label class="filter-option">
 <input type="radio" name="priceRange" ng-checked="filters.priceRange === 'above3000'" ng-click="setPriceFilter('above3000')">
-<span>Above &euro;3,000</span>
+<span>Above {{ money(3000) }}</span>
 </label>
             </fieldset>
             <fieldset class="filter-group">
@@ -98,7 +98,7 @@
 <button type="button" class="shop-text-button" ng-click="toggleWishlist(item, $event)" aria-pressed="{{ isInWishlist(item.sku) }}">{{ isInWishlist(item.sku) ? 'Saved to wishlist' : 'Save to wishlist' }}</button>
 </div>
                 <div class="list-card-pricing">
-<strong class="shop-price">&euro;{{ item.price.toFixed(2) }}</strong>
+<strong class="shop-price">{{ money(item.price) }}</strong>
 <span class="stock-badge stock-instock" ng-if="item.instock > 0">{{ item.instock }} in stock</span>
 <span class="stock-badge stock-out" ng-if="item.instock === 0">Out of stock</span>
 <div class="shop-card-actions">

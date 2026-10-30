@@ -43,6 +43,12 @@ jobs:
         fetch-depth: 0
     - name: Validate release planning and image updates
       run: python3 -m unittest discover -s tests -p test_kind_cd.py -v
+    - name: Validate storefront behavior
+      run: node --test app/web/tests/*.test.cjs
+    - name: Validate delivery and demo checkout
+      run: |
+        python3 -m pip install -r app/payment/tests/requirements.txt
+        python3 -m unittest discover -s app/payment/tests -v
     - name: Plan image builds
       id: plan
       run: python3 scripts/ci/plan-images.py
