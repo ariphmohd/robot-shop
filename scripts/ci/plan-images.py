@@ -8,10 +8,9 @@ import subprocess
 
 SERVICES = ("catalogue", "cart", "dispatch", "payment", "ratings", "shipping", "user", "web", "mysql")
 PIPELINE_PATHS = {
-    "tests/test_kind_cd.py",
+    "tests/test_image_planning.py",
     ".github/workflows/container-images.yml",
     "scripts/ci/plan-images.py",
-    "scripts/kind/update-image-tags.py",
 }
 
 def select_services(paths, force_all=False):
@@ -27,22 +26,25 @@ def select_services(paths, force_all=False):
             return list(SERVICES)
     return [s for s in SERVICES if s in selected]
 
-def pending_services(revision, root):
-    """Carry forward changes from superseded runs that never published tags."""
+def pending_services(revision, root, infra_root):
+    """Compare app history with image source revisions in the separate GitOps repo."""
+    overlay = Path(infra_root) / "k8s/overlays/kind"
+    if not overlay.is_dir():
+        raise ValueError("Missing infrastructure checkout: k8s/overlays/kind")
     pending = set()
     for service in SERVICES:
         pattern = re.compile(r"robotshop-kind/" + re.escape(service) + r":sha-([0-9a-f]{12})-[0-9]+-[0-9]+")
-        matches = [m.group(1) for path in (root / "k8s/overlays/kind").glob("*.yaml")
+        matches = [m.group(1) for path in overlay.glob("*.yaml")
                    for m in pattern.finditer(path.read_text())]
         if len(matches) != 1:
             pending.add(service)
             continue
         result = subprocess.run(
-            ["git", "diff", "--quiet", matches[0], revision, "--", "app/" + service],
-            cwd=root, capture_output=True,
+            ["git", "diff", "--name-only", "--no-renames", matches[0], revision, "--"],
+            cwd=root, capture_output=True, text=True,
         )
-        if result.returncode != 0:
-            # Includes unavailable baseline history: rebuild instead of losing an edit.
+        if result.returncode != 0 or service in select_services(result.stdout.splitlines()):
+            # Missing baseline history rebuilds safely. Shared changes carry forward too.
             pending.add(service)
     return pending
 
@@ -69,7 +71,10 @@ def main():
                 paths = diff.stdout.splitlines()
     services = select_services(paths, force_all)
     if name == "push":
-        pending = pending_services(after, Path(__file__).resolve().parents[2])
+        infra_root = os.environ.get("INFRA_ROOT")
+        if not infra_root:
+            raise SystemExit("INFRA_ROOT must point to the separate infrastructure checkout")
+        pending = pending_services(after, Path(__file__).resolve().parents[2], Path(infra_root))
         services = [s for s in SERVICES if s in set(services) | pending]
     sha = os.environ["GITHUB_SHA"]
     run = os.environ["GITHUB_RUN_ID"]
