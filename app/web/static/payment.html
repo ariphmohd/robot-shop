@@ -1,107 +1,68 @@
-<!-- ==========================================================================
-     AriphMohd Robot Shop - Flipkart-Inspired Payment & AMQP Settlement
-     ========================================================================== -->
-<div class="cart-layout" style="margin-top: 16px;">
-
-    <!-- Left Column: Payment Methods & Order Items Review -->
-    <div class="cart-items-card">
-        <!-- Multi-Step Breadcrumb Bar -->
-        <div style="background: var(--bg-secondary); padding: 12px 24px; border-bottom: 1px solid var(--border-light); display: flex; gap: 24px; font-size: 13px; font-weight: 700;">
-            <span style="color: var(--offer-green);">✓ 1. CART &amp; ALLOCATION</span>
-            <span style="color: var(--offer-green);">✓ 2. DELIVERY &amp; FREIGHT</span>
-            <span style="color: var(--primary-blue); border-bottom: 2px solid var(--primary-blue); padding-bottom: 2px;">3. PAYMENT SETTLEMENT</span>
-        </div>
-
-        <div style="padding: 24px;">
-            <h2 style="font-size: 18px; font-weight: 700; margin-bottom: 4px;">Payment Options &amp; Order Authorization</h2>
-            <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;">
-                Transaction payload processed by the Python Flask payment microservice and published to RabbitMQ.
-            </p>
-
-            <!-- Payment Options Selection -->
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px;">
-                <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); cursor: pointer; background: var(--bg-secondary);">
-                    <input type="radio" name="payOption" checked accent-color="var(--primary-blue)"/>
-                    <div>
-                        <div style="font-weight: 700; font-size: 14px;">Credit / Debit / ATM Card &bull; Instant Settlement</div>
-                        <div style="font-size: 12px; color: var(--text-muted);">Visa, MasterCard, RuPay, American Express corporate cards accepted.</div>
-                    </div>
-                </label>
-
-                <label style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border: 1px solid var(--border-light); border-radius: var(--radius-sm); cursor: pointer;">
-                    <input type="radio" name="payOption" accent-color="var(--primary-blue)"/>
-                    <div>
-                        <div style="font-weight: 700; font-size: 14px;">Enterprise NetBanking &amp; UPI / Wire Transfer</div>
-                        <div style="font-size: 12px; color: var(--text-muted);">Instant real-time AMQP queue allocation.</div>
-                    </div>
-                </label>
-            </div>
-
-            <!-- Items Review Table -->
-            <div ng-if="data.cart && data.cart.total != 0" style="margin-bottom: 24px;">
-                <h3 style="font-size: 14px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px;">Order Payload Summary</h3>
-                <div style="border: 1px solid var(--border-light); border-radius: var(--radius-sm); overflow: hidden;">
-                    <div ng-repeat="item in data.cart.items" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--border-light);">
-                        <div>
-                            <strong style="font-size: 14px;">{{ item.name }}</strong>
-                            <span style="font-size: 12px; color: var(--text-muted); margin-left: 8px;">Qty: {{ item.qty }}</span>
-                        </div>
-                        <div style="font-weight: 700; font-size: 14px;">&euro;{{ item.subtotal.toFixed(2) }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Button -->
-            <button type="button" 
-                    class="btn btn-purchase btn-lg" 
-                    ng-disabled="data.buttonDisabled || data.cart.total == 0" 
-                    ng-click="pay();" 
-                    style="width: 100%;">
-                {{ data.buttonDisabled ? 'Authorizing & Queuing Order...' : 'AUTHORIZE &amp; DISPATCH ORDER (' + (data.cart.total != 0 ? ('€' + data.cart.total.toFixed(2)) : '') + ')' }}
-            </button>
-
-            <!-- Feedback Message -->
-            <div class="savings-banner" ng-if="data.message && data.message.trim() !== ''" style="margin-top: 18px; border-radius: var(--radius-xs);">
-                {{ data.message }}
-            </div>
-
-            <!-- Success Confirmation Card -->
-            <div ng-if="data.cont" style="background: var(--offer-green-bg); border: 1px solid var(--offer-green); border-radius: var(--radius-sm); padding: 24px; margin-top: 24px; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-                <h3 style="color: var(--offer-green); font-size: 20px; font-weight: 700; margin-bottom: 6px;">Order Placed Successfully!</h3>
-                <p style="color: var(--text-secondary); font-size: 14px; max-width: 500px; margin: 0 auto 18px; line-height: 1.5;">
-                    Your payment was verified and published to RabbitMQ. Order Reference: <strong>{{ data.orderid }}</strong>. The background dispatch daemon has initiated hardware packaging.
-                </p>
-                <div style="display: flex; justify-content: center; gap: 12px;">
-                    <a href="/login" class="btn btn-primary">View in Order History &rarr;</a>
-                    <a href="/" class="btn btn-secondary">Back to Marketplace</a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right Column: Final Price Details -->
-    <div class="price-details-card" ng-if="data.cart && data.cart.total != 0">
-        <div class="price-details-header">
-            Final Price Details
-        </div>
-        <div class="price-breakdown-body">
-            <div class="price-row">
-                <span style="color: var(--text-secondary);">Items Total</span>
-                <span>&euro;{{ data.cart.total.toFixed(2) }}</span>
-            </div>
-            <div class="price-row">
-                <span style="color: var(--text-secondary);">Included Regional VAT</span>
-                <span>&euro;{{ data.cart.tax.toFixed(2) }}</span>
-            </div>
-            <div class="price-row total-row">
-                <span>Total Payable</span>
-                <span>&euro;{{ data.cart.total.toFixed(2) }}</span>
-            </div>
-        </div>
-        <div class="savings-banner">
-            Guaranteed 24-Month Hardware Warranty included!
-        </div>
-    </div>
-
+<section class="shop-page" aria-labelledby="payment-title">
+<header class="shop-page-heading">
+<div>
+<p class="eyebrow">ONE LAST LOOK</p>
+<h1 id="payment-title">Ready for what&rsquo;s next.</h1>
 </div>
+</header>
+<nav class="shop-checkout-steps" aria-label="Checkout progress">
+<a href="/cart">1 / Cart</a>
+<a href="/shipping">2 / Delivery</a>
+<span aria-current="step">3 / Review</span>
+</nav>
+    <div class="shop-notice" role="status" ng-if="data.message">{{ data.message }}</div>
+    <div class="shop-empty" ng-if="(!data.cart || !data.cart.total) && !data.cont">
+<h2>Your cart is waiting.</h2>
+<p>Choose a robot and a delivery destination before placing an order.</p>
+<a href="/search" class="btn btn-primary">Explore robots</a>
+</div>
+    <div class="cart-layout" ng-if="data.cart && data.cart.total && !data.cont">
+<div class="cart-items-card shop-form-panel">
+<h2>Review your order</h2>
+<p class="shop-muted">Check your selection and delivery charge before continuing.</p>
+<div class="shop-review-items">
+<div class="shop-review-item" ng-repeat="item in data.cart.items">
+<div>
+<strong>{{ item.name }}</strong>
+<span class="shop-field-hint">Quantity {{ item.qty }}</span>
+</div>
+<strong>&euro;{{ item.subtotal.toFixed(2) }}</strong>
+</div>
+</div>
+<p class="shop-notice" ng-if="(data.cart.items | filter:{sku:'SHIP'}:true).length === 0">Choose delivery before placing your order. <a href="/shipping">Go to delivery &rarr;</a>
+</p>
+<div class="shop-demo-note">
+<p class="eyebrow">DEMO CHECKOUT</p>
+<p>This store simulates payment. No card details are requested and no real charge is made.</p>
+</div>
+<button type="button" class="btn btn-purchase shop-full-width" ng-disabled="data.buttonDisabled || !data.cart.total || (data.cart.items | filter:{sku:'SHIP'}:true).length === 0" ng-click="pay()">{{ data.buttonDisabled ? 'Placing your order…' : 'Place demo order' }}</button>
+</div>
+<aside class="price-details-card" aria-label="Final order total">
+<h2 class="price-details-header">Order summary</h2>
+<div class="price-breakdown-body">
+<div class="price-row">
+<span>Order total, with shipping</span>
+<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+</div>
+<div class="price-row">
+<span>Included tax</span>
+<span>&euro;{{ data.cart.tax.toFixed(2) }}</span>
+</div>
+<div class="price-row total-row">
+<span>Total</span>
+<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+</div>
+</div>
+</aside>
+</div>
+    <div class="shop-order-success" ng-if="data.cont">
+<p class="eyebrow">YOUR NEXT CHAPTER</p>
+<h2>Order received.</h2>
+<p>Your order reference</p>
+<strong class="shop-order-reference">{{ data.orderid }}</strong>
+<div class="shop-inline-actions">
+<a href="/login" class="btn btn-primary">View your account</a>
+<a href="/search" class="btn btn-secondary">Keep exploring</a>
+</div>
+</div>
+</section>

@@ -1,21 +1,24 @@
 <div class="atelier-home">
-    <section class="atelier-hero">
+    <section class="atelier-hero" aria-labelledby="hero-title">
         <div class="atelier-hero-copy">
-            <p class="eyebrow">A LITTLE MORE POSSIBILITY</p>
-            <h1>Meet your next<br><em>bright idea.</em></h1>
-            <p class="atelier-intro">From curious companions to capable machines. Find a robot for the way you live, create, and explore.</p>
-            <div class="atelier-actions"><a href="#best-sellers" class="atelier-cta">Find your robot <span>→</span></a><a href="/search" class="atelier-link">Explore the collection</a></div>
-            <div class="atelier-assurance"><span>01</span> Explore the collection <span>02</span> Make it yours</div>
+            <p class="eyebrow"><span class="shop-signal" aria-hidden="true"></span> THE NEXT GENERATION OF ROBOTICS</p>
+            <h1 id="hero-title">The future.<br><em>Within reach.</em></h1>
+            <p class="atelier-intro">Intelligence that moves. Machines that inspire. Discover your next breakthrough in our world of robotics.</p>
+            <div class="atelier-actions"><a href="/search" class="atelier-cta">Explore the collection <span aria-hidden="true">↗</span></a><a href="/product/Watson" class="atelier-link">Meet Watson <span aria-hidden="true">→</span></a></div>
+            <div class="shop-hero-footnote"><span>RESEARCH</span><span>INDUSTRY</span><span>EXPLORATION</span></div>
         </div>
-        <div class="atelier-hero-art"><div class="atelier-art-caption"><span>THE NEXT CHAPTER</span><strong>Extraordinary starts here.</strong></div><img src="/images/hero-artisanal-robot.png" alt="A warm ivory autonomous robot in an artisanal studio"></div>
+        <a class="atelier-hero-art" href="/product/Watson" aria-label="Explore Watson artificial intelligence robot">
+            <div class="shop-model-top"><span>FEATURED MACHINE</span><span>01 / WATSON</span></div>
+            <img src="/images/Watson.png" alt="Watson humanoid robot with silver armour and cyan accents" fetchpriority="high">
+            <div class="atelier-art-caption"><div><span>ARTIFICIAL INTELLIGENCE</span><strong>Meet Watson.</strong></div><span class="shop-model-arrow" aria-hidden="true">↗</span></div>
+        </a>
     </section>
-
-    <section class="atelier-intro-strip" aria-label="Brand principles"><p>For curious minds. And everyday adventures.</p><span>Companions · Field robotics · Intelligent machines</span></section>
+    <section class="atelier-intro-strip" aria-label="Explore the range"><p>Extraordinary machines. <span>Real possibilities.</span></p><a href="/search">Find your next robot <span aria-hidden="true">→</span></a></section>
 
     <section class="atelier-products" id="best-sellers">
-        <div class="atelier-section-heading"><div><p class="eyebrow">THE COLLECTION</p><h2>Good things come with circuits.</h2></div><a href="/search" class="atelier-link">View all robots →</a></div>
+        <div class="atelier-section-heading"><div><p class="eyebrow">YOUR NEXT BREAKTHROUGH</p><h2>Find your kind of extraordinary.</h2></div><a href="/search" class="atelier-link">View all robots →</a></div>
         <div class="atelier-filter-tags" role="group" aria-label="Product categories">
-            <button type="button" ng-click="filterCategory('All')" ng-class="{'active': selectedCategory === 'All'}" aria-pressed="{{ selectedCategory === 'All' }}">All creations</button>
+            <button type="button" ng-click="filterCategory('All')" ng-class="{'active': selectedCategory === 'All'}" aria-pressed="{{ selectedCategory === 'All' }}">All robots</button>
             <button type="button" ng-click="filterCategory('Home Companions')" ng-class="{'active': selectedCategory === 'Home Companions'}" aria-pressed="{{ selectedCategory === 'Home Companions' }}">Home companions</button>
             <button type="button" ng-click="filterCategory('Field Robotics')" ng-class="{'active': selectedCategory === 'Field Robotics'}" aria-pressed="{{ selectedCategory === 'Field Robotics' }}">Field robotics</button>
             <button type="button" ng-click="filterCategory('AI Modules')" ng-class="{'active': selectedCategory === 'AI Modules'}" aria-pressed="{{ selectedCategory === 'AI Modules' }}">AI modules</button>
@@ -42,7 +45,7 @@
         </div>
         <div class="atelier-product-grid" ng-if="!catalogueLoading && !catalogueError">
             <article class="atelier-product-card" ng-repeat="prod in data.allProducts | filter:categoryFilter | limitTo:8">
-                <button type="button" class="atelier-heart" ng-class="{'active': isInWishlist(prod.sku)}" ng-click="toggleWishlist(prod, $event);" aria-label="Save {{ prod.name }}" aria-pressed="{{ isInWishlist(prod.sku) }}">♡</button>
+                <button type="button" class="atelier-heart" ng-class="{'active': isInWishlist(prod.sku)}" ng-click="toggleWishlist(prod, $event);" aria-label="Save {{ prod.name }}" aria-pressed="{{ isInWishlist(prod.sku) }}"><svg class="shop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
                 <span class="atelier-stock" ng-class="{'is-unavailable': prod.instock === 0}">{{ prod.instock === 0 ? 'Out of stock' : 'In stock' }}</span>
                 <a href="/product/{{ prod.sku }}" class="atelier-product-image"><img ng-src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}" loading="lazy" decoding="async"></a>
                 <div class="atelier-product-copy"><span class="atelier-product-kind">{{ prod.categories[0] || 'ROBOTIC OBJECT' }}</span><a href="/product/{{ prod.sku }}"><h3>{{ prod.name }}</h3></a><p>{{ prod.description }}</p><div class="atelier-product-bottom"><strong>€{{ prod.price.toFixed(2) }}</strong><button type="button" ng-click="quickAddToCart(prod, $event);" ng-disabled="prod.instock === 0">{{ prod.instock === 0 ? 'Unavailable' : 'Add to cart' }}</button></div></div>
@@ -51,11 +54,11 @@
     </section>
 
     <section class="atelier-discover" aria-labelledby="discover-heading">
-        <div class="atelier-section-heading"><div><p class="eyebrow">FOLLOW YOUR CURIOSITY</p><h2 id="discover-heading">A world worth exploring.</h2></div><p>Different capabilities.<br>The same sense of possibility.</p></div>
+        <div class="atelier-section-heading"><div><p class="eyebrow">BUILT FOR YOUR WORLD</p><h2 id="discover-heading">Choose your next frontier.</h2></div><p>From intelligent companions<br>to machines that go further.</p></div>
         <div class="atelier-discover-grid">
-            <a href="/search/Artificial%20Intelligence" class="atelier-discover-card"><span class="atelier-discover-number">01 / THINK</span><h3>A little intelligence.<br>A lot of potential.</h3><span class="atelier-discover-link">Explore cognitive AI <span aria-hidden="true">↗</span></span></a>
-            <a href="/search/Robot" class="atelier-discover-card"><span class="atelier-discover-number">02 / DO</span><h3>Built for the<br>next big thing.</h3><span class="atelier-discover-link">Explore field robotics <span aria-hidden="true">↗</span></span></a>
-            <a href="/search" class="atelier-discover-card"><span class="atelier-discover-number">03 / DISCOVER</span><h3>Find something<br>unexpected.</h3><span class="atelier-discover-link">Meet the whole collection <span aria-hidden="true">↗</span></span></a>
+            <a href="/search/Artificial%20Intelligence" class="atelier-discover-card"><span class="atelier-discover-number">01 / THINK</span><h3>Intelligence.<br>Made tangible.</h3><span class="atelier-discover-link">Explore cognitive AI <span aria-hidden="true">↗</span></span></a>
+            <a href="/search/Robot" class="atelier-discover-card"><span class="atelier-discover-number">02 / DO</span><h3>Beyond the<br>ordinary.</h3><span class="atelier-discover-link">Explore field robotics <span aria-hidden="true">↗</span></span></a>
+            <a href="/search" class="atelier-discover-card"><span class="atelier-discover-number">03 / DISCOVER</span><h3>Your next<br>discovery.</h3><span class="atelier-discover-link">Meet the whole collection <span aria-hidden="true">↗</span></span></a>
         </div>
     </section>
 </div>

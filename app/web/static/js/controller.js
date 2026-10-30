@@ -111,9 +111,9 @@
         // Theme Management: Light / Dark / System
         // ---------------------------------------------------------------------
         var themeKey = 'robotshop_theme';
-        var savedTheme = 'light';
+        var savedTheme = 'dark';
         try {
-            savedTheme = $window.localStorage.getItem(themeKey) || 'light';
+            savedTheme = $window.localStorage.getItem(themeKey) || 'dark';
         } catch (e) {}
 
         $rootScope.currentTheme = savedTheme;
@@ -743,7 +743,9 @@
         $scope.data = {};
         $scope.data.message = '';
         $scope.data.product = {};
-        $scope.data.rating = { avg_rating: 4.5, rating_count: 18 };
+        $scope.data.rating = { avg_rating: 0, rating_count: 0 };
+        $scope.data.productLoading = true;
+        $scope.data.productError = false;
         $scope.data.quantity = 1;
 
         $scope.activeImage = '';
@@ -798,7 +800,7 @@
         $scope.rateProduct = function(score) {
             var url = '/api/ratings/api/rate/' + $scope.data.product.sku + '/' + score;
             $http.put(url).then(function(res) {
-                $scope.data.message = 'Thank you! Your verified ' + score + '★ rating has been recorded.';
+                $scope.data.message = 'Thank you! Your ' + score + '★ rating has been recorded.';
                 $timeout(clearMessage, 3000);
                 loadRating($scope.data.product.sku);
             }).catch(function(e) {
@@ -816,15 +818,21 @@
             }).catch(function(e) {});
         }
 
+        $scope.retryProduct = function() { loadProduct($routeParams.sku); };
+
         function loadProduct(sku) {
-            $http.get('/api/catalogue/product/' + sku).then(function(res) {
+            $scope.data.productLoading = true;
+            $scope.data.productError = false;
+            return $http.get('/api/catalogue/product/' + sku).then(function(res) {
                 $scope.data.product = res.data;
                 $scope.activeImage = '/images/' + res.data.sku + '.png';
                 if (res.data.categories && res.data.categories.length > 0) {
                     loadRelatedProducts(res.data.categories[0], res.data.sku);
                 }
             }).catch(function(e) {
-                console.log('Error loading product', e);
+                $scope.data.productError = true;
+            }).finally(function() {
+                $scope.data.productLoading = false;
             });
         }
 
@@ -1013,7 +1021,7 @@
             $scope.data.buttonDisabled = true;
             $http.post('/api/payment/pay/' + $scope.data.uniqueid, $scope.data.cart).then(function(res) {
                 $scope.data.orderid = res.data.orderid;
-                $scope.data.message = 'Payment Verified & Order Dispatched: ' + res.data.orderid;
+                $scope.data.message = 'Your demo order has been placed.';
                 $scope.data.cart = { total: 0, items: [] };
                 currentUser.cart = $scope.data.cart;
                 currentUser.save();

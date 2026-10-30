@@ -1,30 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <!--# include file="eum.html" -->
     <meta charset="utf-8">
+    <base href="/">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AriphMohd Robot Shop | Online Marketplace for Autonomous Robotics</title>
-    <meta name="description" content="India's leading robotics marketplace. Shop autonomous AI units, surgical droids, deep-space rovers, and planetary harvesters with guaranteed warranty.">
+    <meta name="description" content="Explore robots for research, industry, agriculture, and discovery. Compare the collection and find your next machine.">
     <link rel="shortcut icon" type="image/svg+xml" href="/media/logo.svg"/>
-    
+
     <!-- Instant Zero-Flash Theme Initialization -->
     <script>
         (function() {
             try {
-                var savedTheme = localStorage.getItem('robotshop_theme') || 'light';
+                var savedTheme = localStorage.getItem('robotshop_theme') || 'dark';
                 var systemDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
                 var effectiveTheme = savedTheme === 'dark' || (savedTheme === 'system' && systemDark) ? 'dark' : 'light';
                 document.documentElement.setAttribute('data-theme', effectiveTheme);
             } catch (e) {
-                document.documentElement.setAttribute('data-theme', 'light');
+                document.documentElement.setAttribute('data-theme', 'dark');
             }
         })();
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <link rel="stylesheet" href="/css/auto-complete.css">
     <link rel="stylesheet" href="/css/storefront.css">
@@ -45,7 +46,7 @@
                     <span class="brand-logo" aria-hidden="true"><i></i><i></i><i></i></span>
                     <div class="brand-title-wrap">
                         <span class="brand-name">ariphmohd</span>
-                        <span class="brand-subtitle">robotics marketplace</span>
+                        <span class="brand-subtitle">ROBOTICS / NEXT GENERATION</span>
                     </div>
                 </a>
 
@@ -64,12 +65,12 @@
                         <div class="search-category-dropdown" title="Catalog Search Scope">
                             <span>All Robotics ▾</span>
                         </div>
-                        <input type="text" 
-                               placeholder="Search AriphMohd Robot Shop (e.g. Watson, Harvester, Surgery droids...)" 
-                               ng-model="data.searchText" 
-                               ng-change="onSearchInput();" 
-                               ng-focus="onSearchInput();" 
-                               class="search-input" 
+                        <input type="text"
+                               placeholder="Search robots, capabilities, or models…"
+                               ng-model="data.searchText"
+                               ng-change="onSearchInput();"
+                               ng-focus="onSearchInput();"
+                               class="search-input"
                                aria-label="Search marketplace"/>
                         <button type="submit" class="search-btn" aria-label="Submit Search">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -97,6 +98,7 @@
                 <div class="header-actions">
                     <!-- User Account / Sign In (Two-line Amazon style) -->
                     <a href="/login" class="nav-action-item" aria-label="Account and Orders">
+                        <svg class="shop-account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 22v-2a8 8 0 0 1 16 0v2"/></svg>
                         <span class="nav-line-1">Hello, {{ data.user && data.user.name ? data.user.name : 'Sign in' }}</span>
                         <span class="nav-line-2">Account &amp; Orders ▾</span>
                     </a>
@@ -122,7 +124,7 @@
                     <!-- Cart with Yellow Badge -->
                     <button type="button" class="nav-action-item nav-cart-item" ng-click="openCartDrawer();" aria-label="Open shopping cart">
                         <div class="cart-icon-wrap">
-                            🛒
+                            <svg class="shop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 3h2l3 12h11l2-8H6"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
                             <span class="cart-count-badge" ng-if="getCartCount(data.cart) > 0">{{ getCartCount(data.cart) }}</span>
                         </div>
                         <span class="nav-line-2">Cart</span>
@@ -133,20 +135,20 @@
                         <button type="button" class="nav-action-item" ng-click="toggleThemeMenu();" aria-haspopup="listbox" aria-expanded="{{ themeMenuOpen }}" aria-label="Theme: {{ currentTheme }}">
                             <span class="nav-line-1">Appearance</span>
                             <span class="nav-line-2">
-                                <span ng-if="effectiveTheme === 'dark'">🌙 Dark</span>
-                                <span ng-if="effectiveTheme === 'light'">☀️ Light</span>
+                                <span ng-if="effectiveTheme === 'dark'">Dark</span>
+                                <span ng-if="effectiveTheme === 'light'">Light</span>
                                 <span style="font-size: 10px;">▾</span>
                             </span>
                         </button>
                         <div class="theme-dropdown" ng-class="{'show': themeMenuOpen}" role="listbox">
                             <button type="button" class="theme-opt-btn" ng-class="{'active': currentTheme === 'light'}" ng-click="setTheme('light');" role="option">
-                                <span>☀️</span> Light Mode
+                                 Light Mode
                             </button>
                             <button type="button" class="theme-opt-btn" ng-class="{'active': currentTheme === 'dark'}" ng-click="setTheme('dark');" role="option">
-                                <span>🌙</span> Dark Mode
+                                 Dark Mode
                             </button>
                             <button type="button" class="theme-opt-btn" ng-class="{'active': currentTheme === 'system'}" ng-click="setTheme('system');" role="option">
-                                <span>💻</span> System
+                                 System
                             </button>
                         </div>
                     </div>
@@ -155,33 +157,14 @@
         </div>
 
         <!-- Tier 2: Category Navigation Strip (Navy #232F3E) -->
-        <nav class="category-nav-strip" aria-label="Robotics Categories">
+        <nav class="category-nav-strip" aria-label="Explore robotics">
             <div class="container category-strip-inner">
-                <a href="/" class="category-nav-item active">
-                    <span>🤖</span> All Robots
-                </a>
-                <a href="/search/Artificial%20Intelligence" class="category-nav-item">
-                    <span>🧠</span> Cognitive AI
-                </a>
-                <a href="/search/Robot" class="category-nav-item">
-                    <span>🦾</span> Field &amp; Industrial
-                </a>
-                <a href="/search/harvester" class="category-nav-item">
-                    <span>🌾</span> Agricultural Harvesters
-                </a>
-                <a href="/search/EMM" class="category-nav-item">
-                    <span>🏥</span> Clinical &amp; Surgery
-                </a>
-                <a href="/search/RED" class="category-nav-item">
-                    <span>🛡️</span> Security &amp; Defense
-                </a>
-                <a href="/search/HPTD" class="category-nav-item">
-                    <span>🚀</span> Deep-Space Exploration
-                </a>
-                <a href="/search/STAN-1" class="category-nav-item">
-                    <span>☁️</span> Cloud Telemetry Units
-                </a>
-
+                <a href="/search" class="category-nav-item">All robots <span aria-hidden="true">↗</span></a>
+                <a href="/search/Artificial%20Intelligence" class="category-nav-item">Artificial intelligence</a>
+                <a href="/search/Robot" class="category-nav-item">Field &amp; industrial</a>
+                <a href="/search/harvester" class="category-nav-item">Agriculture</a>
+                <a href="/search/HPTD" class="category-nav-item">Exploration</a>
+                <span class="shop-nav-note">ENGINEERED FOR WHAT'S NEXT</span>
             </div>
         </nav>
     </header>
@@ -224,7 +207,7 @@
                 </div>
                 <button type="button" ng-click="closeCompareModal();" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted);">&times;</button>
             </div>
-            
+
             <table class="compare-table">
                 <thead>
                     <tr>
@@ -242,131 +225,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        <td>Catalog SKU</td>
-                        <td ng-repeat="prod in compareList"><code>{{ prod.sku }}</code></td>
-                    </tr>
-                    <tr>
-                        <td>Stock Availability</td>
-                        <td ng-repeat="prod in compareList">
-                            <span class="stock-badge stock-instock" ng-if="prod.instock > 5">In Stock ({{ prod.instock }} units)</span>
-                            <span class="stock-badge stock-limited" ng-if="prod.instock > 0 && prod.instock <= 5">Only {{ prod.instock }} Left</span>
-                            <span class="stock-badge stock-out" ng-if="prod.instock === 0">Out of Stock</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Processor &amp; Compute</td>
-                        <td ng-repeat="prod in compareList">{{ getSpecs(prod.sku).processor }}</td>
-                    </tr>
-                    <tr>
-                        <td>Battery &amp; Endurance</td>
-                        <td ng-repeat="prod in compareList">{{ getSpecs(prod.sku).battery }}</td>
-                    </tr>
-                    <tr>
-                        <td>Payload &amp; Manipulator</td>
-                        <td ng-repeat="prod in compareList">{{ getSpecs(prod.sku).payload }}</td>
-                    </tr>
-                    <tr>
-                        <td>Ingress Protection</td>
-                        <td ng-repeat="prod in compareList">{{ getSpecs(prod.sku).rating }}</td>
-                    </tr>
-                    <tr>
-                        <td>Telemetry &amp; Comms</td>
-                        <td ng-repeat="prod in compareList">{{ getSpecs(prod.sku).connectivity }}</td>
-                    </tr>
-                    <tr>
-                        <td>Hardware Warranty</td>
-                        <td ng-repeat="prod in compareList">{{ getSpecs(prod.sku).warranty }}</td>
-                    </tr>
+                    <tr><th scope="row">Model</th><td ng-repeat="prod in compareList">{{ prod.sku }}</td></tr>
+                    <tr><th scope="row">Category</th><td ng-repeat="prod in compareList">{{ prod.categories.join(', ') }}</td></tr>
+                    <tr><th scope="row">Description</th><td ng-repeat="prod in compareList">{{ prod.description }}</td></tr>
+                    <tr><th scope="row">Availability</th><td ng-repeat="prod in compareList">{{ prod.instock > 0 ? prod.instock + ' in stock' : 'Out of stock' }}</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- Amazon-Style Multi-Tier Marketplace Footer -->
-    <footer class="app-footer">
-        <div class="back-to-top" ng-click="scrollToTop();" role="button" tabindex="0">
-            Back to top
-        </div>
-        <div class="footer-main-grid">
-            <div class="container">
-                <div class="footer-grid">
-                    <!-- Col 1: Get to Know Us -->
-                    <div class="footer-col">
-                        <h4>Get to Know Us</h4>
-                        <ul class="footer-links">
-                            <li><a href="/#about">About AriphMohd Robotics</a></li>
-                            <li><a href="/#careers">Careers &amp; Engineering</a></li>
-                            <li><a href="/#press">Press Releases &amp; Whitepapers</a></li>
-                            <li><a href="/#corporate">Science &amp; Robotics Research</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Col 2: Make Money with Us -->
-                    <div class="footer-col">
-                        <h4>Make Money with Us</h4>
-                        <ul class="footer-links">
-                            <li><a href="/#sell">Sell on AriphMohd Robotics</a></li>
-                            <li><a href="/#build">Build Hardware Integrations</a></li>
-                            <li><a href="/#affiliate">Robotics Affiliate Program</a></li>
-                            <li><a href="/#advertise">Advertise Your Robots</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Col 3: Cloud & Architecture -->
-                    <div class="footer-col">
-                        <h4>Cloud &amp; Infrastructure</h4>
-                        <ul class="footer-links">
-                            <li><a href="https://aws.amazon.com/eks/" target="_blank" rel="noopener">Amazon EKS Ready</a></li>
-                            <li><a href="https://kubernetes.io/" target="_blank" rel="noopener">Kubernetes Ingress v1.28</a></li>
-                            <li><a href="https://github.com/instana/robot-shop" target="_blank" rel="noopener">Open Architecture GitHub</a></li>
-                            <li><a href="/login">Enterprise IAM Portal</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Col 4: Let Us Help You -->
-                    <div class="footer-col">
-                        <h4>Let Us Help You</h4>
-                        <ul class="footer-links">
-                            <li><a href="/login">Your Account &amp; Orders</a></li>
-                            <li><a href="/shipping">Shipping Rates &amp; Shock Policies</a></li>
-                            <li><a href="/payment">AMQP &amp; Payment Settlements</a></li>
-                            <li><a href="/#warranty">24-Month Hardware Warranty</a></li>
-                            <li><a href="/#help">Help &amp; Customer Service</a></li>
-                        </ul>
-                    </div>
-
-                    <!-- Col 5: Registered Office -->
-                    <div class="footer-col" style="border-left: 1px solid rgba(255, 255, 255, 0.1); padding-left: 20px;">
-                        <h4>AriphMohd Robotics HQ</h4>
-                        <p style="color: #CCCCCC; font-size: 12px; line-height: 1.6; margin-top: 4px;">
-                            AriphMohd Robotics Inc.<br>
-                            Autonomous Precision Center, Block 4B,<br>
-                            Outer Ring Road, Bellandur,<br>
-                            Bengaluru, 560103, Karnataka, India<br>
-                            CIN: U72900KA2026PTC088219
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Footer Bottom Bar -->
-        <div class="footer-bottom-bar">
-            <div class="container footer-bottom-inner">
-                <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
-                    <span>⭐ <strong>Precision Autonomous Systems</strong></span>
-                    <span>📦 <strong>Express Shock-Proof Dispatch</strong></span>
-                    <span>🛡️ <strong>24-Month Hardware Warranty</strong></span>
-                    <span>💳 <strong>PCI-DSS Compliant Payments</strong></span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px; font-variant-numeric: tabular-nums;">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #168342; box-shadow: 0 0 6px #168342;"></span>
-                    <span ng-if="data.user && data.user.name">User: <strong>{{ data.user.name }}</strong> (Session: {{ data.uniqueid }})</span>
-                    <span ng-if="!data.user || !data.user.name">Session: {{ data.uniqueid }}</span>
-                    <span>&copy; 2026 AriphMohd Robot Shop. All rights reserved.</span>
-                </div>
-            </div>
+    <footer class="shop-footer">
+        <div class="container shop-footer-inner">
+            <a href="/" class="shop-footer-brand">ariphmohd<span>Built for the curious.</span></a>
+            <nav aria-label="Footer"><a href="/search">Explore robots</a><a href="/login">Account &amp; orders</a><a href="/cart">Your cart</a></nav>
+            <p>&copy; 2026 AriphMohd Robot Shop.</p>
         </div>
     </footer>
 
@@ -377,9 +249,6 @@
 <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.7/angular-route.js"></script>
 <script src="/js/auto-complete.js"></script>
 <script src="/js/controller.js"></script>
-<script type="text/javascript">
-    angular.element(document.getElementsByTagName('head')).append(angular.element('<base href="' + window.location.pathname + '" />'));
-</script>
 
 </body>
 </html>

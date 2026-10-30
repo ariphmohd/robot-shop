@@ -1,261 +1,89 @@
-<!-- ==========================================================================
-     AriphMohd Robot Shop - Flipkart-Inspired Product Detail Page (PDP)
-     ========================================================================== -->
-<div class="pdp-container">
-
-    <!-- Flash Feedback Message -->
-    <div class="savings-banner" ng-if="data.message && data.message.trim() !== ''" style="margin-bottom: 20px; border-radius: var(--radius-xs);">
-        {{ data.message }}
-    </div>
-
-    <!-- Main 2-Column PDP Layout -->
-    <div class="pdp-layout">
-
-        <!-- Left Column: Sticky Gallery & Action Buttons -->
+<section class="shop-page pdp-container" aria-labelledby="product-title">
+    <nav class="breadcrumb-nav" aria-label="Breadcrumb">
+<a href="/">Home</a>
+<span aria-hidden="true">/</span>
+<a href="/search">Collection</a>
+<span aria-hidden="true">/</span>
+<span>{{ data.product.name || 'Robot' }}</span>
+</nav>
+    <div class="shop-notice" ng-if="data.message" role="status">{{ data.message }}</div>
+    <p class="shop-muted" role="status" ng-if="data.productLoading">Loading your next discovery…</p>
+    <div class="shop-empty" role="alert" ng-if="data.productError"><h2>We couldn&rsquo;t load this robot.</h2><p>Please try again, or explore the collection.</p><button type="button" class="btn btn-primary" ng-click="retryProduct()">Try again</button></div>
+    <div class="pdp-layout" ng-if="data.product.sku && !data.productLoading && !data.productError">
         <div class="pdp-sticky-gallery">
-            <div class="pdp-gallery-main">
-                <span class="stock-badge stock-instock" ng-if="data.product.instock > 5" style="top: 12px; left: 12px;">In Stock</span>
-                <span class="stock-badge stock-limited" ng-if="data.product.instock > 0 && data.product.instock <= 5" style="top: 12px; left: 12px;">Only {{ data.product.instock }} Left</span>
-                <span class="stock-badge stock-out" ng-if="data.product.instock === 0" style="top: 12px; left: 12px;">Backorder</span>
-
-                <button type="button" 
-                        class="wishlist-toggle-btn" 
-                        ng-class="{'active': isInWishlist(data.product.sku)}" 
-                        ng-click="toggleWishlist(data.product, $event);" 
-                        title="{{ isInWishlist(data.product.sku) ? 'Remove from Wishlist' : 'Add to Wishlist' }}">
-                    ♥
-                </button>
-
-                <img ng-src="{{ activeImage || '/images/' + data.product.sku + '.png' }}" alt="{{ data.product.name }} Visual Inspection"/>
-            </div>
-
-            <!-- Thumbnail Switcher -->
-            <div class="pdp-thumbnails-row">
-                <button type="button" 
-                        class="pdp-thumb-btn" 
-                        ng-class="{'active': activeImage === '/images/' + data.product.sku + '.png' || !activeImage}" 
-                        ng-click="setImage('/images/' + data.product.sku + '.png');" 
-                        aria-label="Front View">
-                    <img ng-src="/images/{{ data.product.sku }}.png" alt="Front"/>
-                </button>
-                <button type="button" 
-                        class="pdp-thumb-btn" 
-                        ng-class="{'active': activeImage === '/media/logo.svg'}" 
-                        ng-click="setImage('/media/logo.svg');" 
-                        aria-label="Schematics">
-                    <img src="/media/logo.svg" alt="Schematics"/>
-                </button>
-                <button type="button" 
-                        class="pdp-thumb-btn" 
-                        ng-class="{'active': activeImage === '/images/placeholder.png'}" 
-                        ng-click="setImage('/images/placeholder.png');" 
-                        aria-label="Chassis Wireframe">
-                    <img src="/images/placeholder.png" alt="Chassis"/>
-                </button>
-            </div>
-
-            <!-- Dual Sticky Flipkart CTAs: Add to Cart & Buy Now -->
-            <div class="pdp-actions-row">
-                <button type="button" 
-                        class="btn btn-cart" 
-                        ng-click="addToCart();" 
-                        ng-disabled="data.product.instock === 0">
-                    <span>🛒</span> ADD TO CART
-                </button>
-                <button type="button" 
-                        class="btn btn-buy" 
-                        ng-click="buyNow();" 
-                        ng-disabled="data.product.instock === 0">
-                    <span>⚡</span> BUY NOW
-                </button>
-            </div>
-
-            <div style="display: flex; justify-content: center; gap: 16px; margin-top: 6px;">
-                <label class="compare-checkbox-label" style="font-size: 13px;">
-                    <input type="checkbox" ng-checked="isCompared(data.product.sku)" ng-click="toggleCompare(data.product, $event)"/>
-                    <span>Pin to Compare Matrix</span>
-                </label>
-            </div>
-        </div>
-
-        <!-- Right Column: Product Information, Specs & Offers -->
-        <div class="pdp-info-column">
-
-            <!-- Breadcrumbs -->
-            <nav class="breadcrumb-nav" aria-label="Breadcrumb">
-                <a href="/">Home</a>
-                <span>&rsaquo;</span>
-                <a href="/search">Robotics Fleet</a>
-                <span>&rsaquo;</span>
-                <span>{{ data.product.name }}</span>
-            </nav>
-
-            <div>
-                <h1 class="pdp-title">{{ data.product.name }}</h1>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                    SKU: <strong>{{ data.product.sku }}</strong> &bull; Category: <strong>{{ data.product.categories.join(', ') }}</strong>
-                </div>
-            </div>
-
-            <!-- Rating Row -->
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                <span class="rating-pill">{{ data.rating.avg_rating ? data.rating.avg_rating.toFixed(1) : '4.5' }} ★</span>
-                <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">
-                    {{ data.rating.rating_count || 18 }} Ratings &amp; {{ (data.rating.rating_count || 18) * 2 }} Verified Telemetry Reviews
-                </span>
-            </div>
-
-            <!-- Price Block -->
-            <div style="background: var(--bg-secondary); border-radius: var(--radius-sm); padding: 16px 20px;">
-                <div style="display: flex; align-items: baseline; gap: 12px;">
-                    <span style="font-size: 28px; font-weight: 800; color: var(--text-primary);">&euro;{{ data.product.price.toFixed(2) }}</span>
-                    <span style="font-size: 16px; color: var(--text-muted); text-decoration: line-through;">&euro;{{ (data.product.price * 1.15).toFixed(2) }}</span>
-                    <span style="font-size: 14px; font-weight: 700; color: var(--offer-green);">15% off Special Launch Offer</span>
-                </div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-                    Inclusive of all regional VAT, import duties &amp; environmental fees.
-                </div>
-            </div>
-
-            <!-- Available Offers Box (Flipkart Style) -->
-            <div class="pdp-offers-box">
-                <div class="offers-box-title">
-                    <span>🏷️</span> Available Offers
-                </div>
-                <div class="offer-item">
-                    <span class="offer-badge">Bank Offer</span>
-                    <span>5% Unlimited Cashback on AriphMohd Corporate Robotics Card. T&amp;C</span>
-                </div>
-                <div class="offer-item">
-                    <span class="offer-badge">Enterprise Leasing</span>
-                    <span>Available from &euro;{{ (data.product.price / 12).toFixed(2) }}/month at 0% annual leasing interest.</span>
-                </div>
-                <div class="offer-item">
-                    <span class="offer-badge">Partner Offer</span>
-                    <span>Free Cloud Telemetry Bridge on Amazon EKS for 12 months with continuous observability.</span>
-                </div>
-            </div>
-
-            <!-- Delivery & Pincode Checker -->
-            <div class="pincode-checker-box">
-                <span style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Delivery Options:</span>
-                <div style="display: flex; gap: 6px;">
-                    <input type="text" 
-                           placeholder="Enter Postal Code" 
-                           ng-model="deliveryPincode" 
-                           class="pincode-input" 
-                           aria-label="Delivery Postal Code"/>
-                    <button type="button" class="btn btn-primary btn-sm" ng-click="checkDeliveryPincode();">Check</button>
-                </div>
-                <div style="width: 100%; font-size: 12px; color: var(--offer-green); font-weight: 600;" ng-if="pincodeStatus">
-                    {{ pincodeStatus }}
-                </div>
-            </div>
-
-            <!-- Highlights -->
-            <div>
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 10px;">Highlights</h3>
-                <ul class="list-specs-list" style="margin-top: 0;">
-                    <li><span>🧠</span> <strong>Processor:</strong> {{ getSpecs(data.product.sku).processor }}</li>
-                    <li><span>🔋</span> <strong>Power Cell:</strong> {{ getSpecs(data.product.sku).battery }}</li>
-                    <li><span>⚖️</span> <strong>Actuator Load:</strong> {{ getSpecs(data.product.sku).payload }}</li>
-                    <li><span>🛡️</span> <strong>Protection:</strong> {{ getSpecs(data.product.sku).rating }}</li>
-                    <li><span>📡</span> <strong>Connectivity:</strong> {{ getSpecs(data.product.sku).connectivity }}</li>
-                    <li><span>🛡️</span> <strong>Warranty:</strong> {{ getSpecs(data.product.sku).warranty }}</li>
-                </ul>
-            </div>
-
-            <!-- Product Description -->
-            <div>
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 6px;">Hardware Architecture Overview</h3>
-                <p style="color: var(--text-secondary); line-height: 1.6; font-size: 13px;">
-                    {{ data.product.description }}. Built with hardened internal avionics, industrial grade actuation, and unified telemetry streams integrated seamlessly with Kubernetes-based microservices architecture.
-                </p>
-            </div>
-
-            <!-- Grouped Specifications Matrix -->
-            <div class="specs-table-container">
-                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 12px;">Detailed Specifications</h3>
-                <table class="specs-table">
-                    <tbody>
-                        <tr>
-                            <td class="spec-key">Model Name</td>
-                            <td class="spec-val">{{ data.product.name }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Catalog SKU</td>
-                            <td class="spec-val">{{ data.product.sku }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Target Application</td>
-                            <td class="spec-val">{{ data.product.categories.join(', ') }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Compute Engine</td>
-                            <td class="spec-val">{{ getSpecs(data.product.sku).processor }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Power System</td>
-                            <td class="spec-val">{{ getSpecs(data.product.sku).battery }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Max Manipulator Load</td>
-                            <td class="spec-val">{{ getSpecs(data.product.sku).payload }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Environmental Seal</td>
-                            <td class="spec-val">{{ getSpecs(data.product.sku).rating }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Radio &amp; Telemetry</td>
-                            <td class="spec-val">{{ getSpecs(data.product.sku).connectivity }}</td>
-                        </tr>
-                        <tr>
-                            <td class="spec-key">Standard Warranty</td>
-                            <td class="spec-val">{{ getSpecs(data.product.sku).warranty }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Ratings & Reviews Section -->
-            <div style="border-top: 1px solid var(--border-light); padding-top: 20px; margin-top: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                    <h3 style="font-size: 16px; font-weight: 700;">Customer Ratings &amp; Reviews</h3>
-                    <div style="font-size: 13px; color: var(--text-muted);">Rate this unit:</div>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-                    <span ng-repeat="vote in [ 1, 2, 3, 4, 5 ]">
-                        <button type="button" 
-                                style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 4px; padding: 4px 10px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--deal-orange);" 
-                                ng-click="rateProduct(vote);">
-                            {{ vote }} ★
-                        </button>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Similar Robots Rail -->
-            <div style="border-top: 1px solid var(--border-light); padding-top: 24px; margin-top: 10px;" ng-if="relatedProducts.length > 0">
-                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px;">Similar Robots You May Like</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
-                    <div class="product-card" ng-repeat="rel in relatedProducts" style="padding: 10px;">
-                        <div class="product-img-box" style="height: 120px;">
-                            <a href="/product/{{ rel.sku }}">
-                                <img ng-src="/images/{{ rel.sku }}.png" alt="{{ rel.name }}"/>
-                            </a>
-                        </div>
-                        <a href="/product/{{ rel.sku }}" class="product-name-link" style="min-height: auto; font-size: 13px;">{{ rel.name }}</a>
-                        <div class="price-block" style="margin-top: 4px;">
-                            <span class="current-price" style="font-size: 15px;">&euro;{{ rel.price.toFixed(2) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
-
+<div class="pdp-gallery-main">
+<img ng-src="/images/{{ data.product.sku }}.png" alt="{{ data.product.name }}">
+<button type="button" class="wishlist-toggle-btn" ng-class="{'active': isInWishlist(data.product.sku)}" ng-click="toggleWishlist(data.product, $event)" aria-label="Save {{ data.product.name }}" aria-pressed="{{ isInWishlist(data.product.sku) }}">♡</button>
 </div>
+<label class="compare-checkbox-label shop-compare-option">
+<input type="checkbox" ng-checked="isCompared(data.product.sku)" ng-click="toggleCompare(data.product, $event)">
+<span>Add to comparison</span>
+</label>
+</div>
+        <div class="pdp-info-column">
+<p class="eyebrow">{{ data.product.categories.join(' / ') }}</p>
+<h1 id="product-title" class="pdp-title">{{ data.product.name }}</h1>
+<p class="shop-product-description">{{ data.product.description }}</p>
+<div class="shop-product-rating">
+<span ng-if="data.rating.rating_count > 0">{{ data.rating.avg_rating.toFixed(1) }} / 5 · {{ data.rating.rating_count }} ratings</span>
+<span ng-if="!data.rating.rating_count">No ratings yet</span>
+</div>
+            <div class="shop-purchase-panel">
+<div class="shop-price-row">
+<strong class="shop-price">&euro;{{ data.product.price.toFixed(2) }}</strong>
+<span class="stock-badge stock-instock" ng-if="data.product.instock > 0">{{ data.product.instock }} in stock</span>
+<span class="stock-badge stock-out" ng-if="data.product.instock === 0">Out of stock</span>
+</div>
+<p class="shop-muted">Shipping is calculated at checkout.</p>
+<label class="form-label" for="product-quantity">Quantity</label>
+<input id="product-quantity" class="form-control shop-quantity" type="number" min="1" step="1" ng-model="data.quantity">
+<div class="pdp-actions-row">
+<button type="button" class="btn btn-purchase" ng-click="addToCart()" ng-disabled="data.product.instock === 0 || !data.quantity || data.quantity < 1 || data.quantity % 1 !== 0">Add to cart</button>
+<button type="button" class="btn btn-secondary" ng-click="buyNow()" ng-disabled="data.product.instock === 0 || !data.quantity || data.quantity < 1 || data.quantity % 1 !== 0">Buy now &rarr;</button>
+</div>
+</div>
+            <section class="shop-detail-section" aria-labelledby="details-title">
+<h2 id="details-title">At a glance</h2>
+<dl class="shop-spec-list">
+<div>
+<dt>Model</dt>
+<dd>{{ data.product.sku }}</dd>
+</div>
+<div>
+<dt>Category</dt>
+<dd>{{ data.product.categories.join(', ') }}</dd>
+</div>
+<div>
+<dt>Availability</dt>
+<dd>{{ data.product.instock > 0 ? 'In stock' : 'Out of stock' }}</dd>
+</div>
+</dl>
+</section>
+            <section class="shop-detail-section" aria-labelledby="rating-title">
+<h2 id="rating-title">What do you think?</h2>
+<p class="shop-muted">Share your rating for this robot.</p>
+<div class="shop-rating-buttons" role="group" aria-label="Rate this robot">
+<button type="button" ng-repeat="vote in [1,2,3,4,5]" class="btn btn-secondary" ng-click="rateProduct(vote)" aria-label="Rate {{ vote }} out of 5">{{ vote }} ★</button>
+</div>
+</section>
+        </div>
+    </div>
+    <section class="shop-related" ng-if="relatedProducts.length > 0">
+<div class="shop-section-title">
+<div>
+<p class="eyebrow">KEEP EXPLORING</p>
+<h2>More to discover.</h2>
+</div>
+<a href="/search" class="atelier-link">View collection &rarr;</a>
+</div>
+<div class="shop-related-grid">
+<a class="shop-related-card" href="/product/{{ rel.sku }}" ng-repeat="rel in relatedProducts">
+<img ng-src="/images/{{ rel.sku }}.png" alt="{{ rel.name }}" loading="lazy">
+<div>
+<h3>{{ rel.name }}</h3>
+<span>&euro;{{ rel.price.toFixed(2) }}</span>
+</div>
+</a>
+</div>
+</section>
+</section>

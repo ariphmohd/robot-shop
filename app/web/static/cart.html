@@ -1,125 +1,77 @@
-<!-- ==========================================================================
-     AriphMohd Robot Shop - Flipkart-Inspired Split-Screen Cart
-     ========================================================================== -->
-<div class="cart-layout">
-
-    <!-- Left Column: Cart Items List -->
-    <div class="cart-items-card">
-        <div class="cart-card-header">
-            <h1 style="font-size: 18px; font-weight: 700;">
-                My Cart ({{ getCartCount(data.cart) }} items)
-            </h1>
-            <a href="/" class="btn btn-secondary btn-sm">&larr; Continue Shopping</a>
-        </div>
-
-        <!-- Empty Cart State -->
-        <div ng-if="!data.cart || data.cart.total == 0 || !data.cart.items || data.cart.items.length == 0" style="text-align: center; padding: 56px 20px;">
-            <div style="font-size: 54px; margin-bottom: 14px;">🛒</div>
-            <h3 style="font-size: 18px; font-weight: 700; margin-bottom: 6px;">Your cart is empty!</h3>
-            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Explore our autonomous robotics fleet and add hardware to get started.</p>
-            <a href="/" class="btn btn-primary btn-lg">Shop Now &rarr;</a>
-        </div>
-
-        <!-- Populated Cart Items -->
-        <div ng-if="data.cart && data.cart.total != 0 && data.cart.items && data.cart.items.length > 0">
-            <div class="cart-item-row" ng-repeat="item in data.cart.items" ng-if="item.sku !== 'SHIP'">
-                <!-- Item Image -->
-                <div>
-                    <a href="/product/{{ item.sku }}">
-                        <img ng-src="/images/{{ item.sku }}.png" alt="{{ item.name }}" class="cart-item-img"/>
-                    </a>
-                    
-                    <!-- Quantity Stepper Controls -->
-                    <div class="qty-stepper">
-                        <button type="button" class="qty-stepper-btn" ng-click="decrementQty(item);" title="Decrease Quantity">&minus;</button>
-                        <input type="text" class="qty-stepper-input" ng-model="item.qty" readonly aria-label="Item quantity"/>
-                        <button type="button" class="qty-stepper-btn" ng-click="incrementQty(item);" title="Increase Quantity">&plus;</button>
-                    </div>
-                </div>
-
-                <!-- Item Information -->
-                <div>
-                    <a href="/product/{{ item.sku }}" style="font-size: 16px; font-weight: 700; color: var(--text-primary); display: block; margin-bottom: 4px;">
-                        {{ item.name }}
-                    </a>
-                    <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
-                        SKU: {{ item.sku }} &bull; Seller: AriphMohd Direct Robotics Lab
-                    </div>
-
-                    <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px;">
-                        <span style="font-size: 18px; font-weight: 800; color: var(--text-primary);">&euro;{{ (item.price || (item.subtotal / item.qty)).toFixed(2) }}</span>
-                        <span style="font-size: 13px; color: var(--text-muted); text-decoration: line-through;">&euro;{{ ((item.price || (item.subtotal / item.qty)) * 1.15).toFixed(2) }}</span>
-                        <span style="font-size: 12px; color: var(--offer-green); font-weight: 700;">15% Off</span>
-                    </div>
-
-                    <!-- Actions -->
-                    <div style="display: flex; gap: 18px; font-size: 13px; font-weight: 700;">
-                        <button type="button" 
-                                style="background: none; border: none; cursor: pointer; color: var(--text-primary); text-transform: uppercase;" 
-                                ng-click="saveForLater(item);">
-                            Save for Later
-                        </button>
-                        <button type="button" 
-                                style="background: none; border: none; cursor: pointer; color: var(--danger-red); text-transform: uppercase;" 
-                                ng-click="removeItem(item);">
-                            Remove
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Delivery Expectation -->
-                <div style="text-align: right; font-size: 12px; color: var(--text-secondary);">
-                    <div>Delivery by <strong>Tomorrow</strong></div>
-                    <div style="color: var(--offer-green); font-weight: 700; margin-top: 4px;">FREE Express Shipping</div>
-                </div>
-            </div>
-
-            <!-- Place Order Bar -->
-            <div style="padding: 16px 24px; display: flex; justify-content: flex-end; background: var(--bg-card); border-top: 1px solid var(--border-light); border-radius: 0 0 var(--radius-sm) var(--radius-sm);">
-                <button type="button" class="btn btn-purchase btn-lg" ng-click="buy();">
-                    PLACE ORDER &rarr;
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Right Column: Sticky Price Details Card -->
-    <div class="price-details-card" ng-if="data.cart && data.cart.total != 0">
-        <div class="price-details-header">
-            Price Details
-        </div>
-        <div class="price-breakdown-body">
-            <div class="price-row">
-                <span style="color: var(--text-secondary);">Price ({{ getCartCount(data.cart) }} items)</span>
-                <span>&euro;{{ (data.cart.total * 1.15).toFixed(2) }}</span>
-            </div>
-            <div class="price-row">
-                <span style="color: var(--text-secondary);">Promotional Discount</span>
-                <span style="color: var(--offer-green); font-weight: 700;">&minus; &euro;{{ (data.cart.total * 0.15).toFixed(2) }}</span>
-            </div>
-            <div class="price-row">
-                <span style="color: var(--text-secondary);">Delivery Charges</span>
-                <span style="color: var(--offer-green); font-weight: 700;">FREE</span>
-            </div>
-            <div class="price-row">
-                <span style="color: var(--text-secondary);">Included Regional Tax</span>
-                <span>&euro;{{ data.cart.tax.toFixed(2) }}</span>
-            </div>
-
-            <div class="price-row total-row">
-                <span>Total Amount</span>
-                <span>&euro;{{ data.cart.total.toFixed(2) }}</span>
-            </div>
-        </div>
-
-        <div class="savings-banner">
-            You will save &euro;{{ (data.cart.total * 0.15).toFixed(2) }} on this order!
-        </div>
-
-        <div style="padding: 14px 20px; font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 8px;">
-            <span>🛡️</span>
-            <span>Safe and Secure Payments. 100% Authentic Robotics Hardware.</span>
-        </div>
-    </div>
-
+<section class="shop-page" aria-labelledby="cart-title">
+<header class="shop-page-heading">
+<div>
+<p class="eyebrow">YOUR SELECTION</p>
+<h1 id="cart-title">Make it yours.</h1>
 </div>
+<a href="/search" class="atelier-link">Continue exploring &rarr;</a>
+</header>
+<nav class="shop-checkout-steps" aria-label="Checkout progress">
+<span aria-current="step">1 / Cart</span>
+<span class="shop-step-future">2 / Delivery</span>
+<span class="shop-step-future">3 / Review</span>
+</nav>
+    <div class="cart-layout">
+<div class="cart-items-card">
+<div class="cart-card-header">
+<h2>Your cart <span class="shop-muted">({{ getCartCount(data.cart) }})</span>
+</h2>
+</div>
+        <div class="shop-empty" ng-if="!data.cart || !data.cart.items || data.cart.total == 0">
+<p class="eyebrow">ROOM FOR SOMETHING EXTRAORDINARY</p>
+<h2>Your next discovery awaits.</h2>
+<p>Explore the collection and find a robot that fits your world.</p>
+<a href="/search" class="btn btn-primary">Explore robots &rarr;</a>
+</div>
+        <div ng-if="data.cart && data.cart.total != 0 && data.cart.items.length">
+<article class="cart-item-row" ng-repeat="item in data.cart.items" ng-if="item.sku !== 'SHIP'">
+<div>
+<a href="/product/{{ item.sku }}">
+<img ng-src="/images/{{ item.sku }}.png" alt="{{ item.name }}" class="cart-item-img">
+</a>
+<div class="qty-stepper">
+<button type="button" class="qty-stepper-btn" ng-click="decrementQty(item)" aria-label="Decrease quantity of {{ item.name }}">−</button>
+<input class="qty-stepper-input" type="text" ng-model="item.qty" readonly aria-label="Quantity of {{ item.name }}">
+<button type="button" class="qty-stepper-btn" ng-click="incrementQty(item)" aria-label="Increase quantity of {{ item.name }}">+</button>
+</div>
+</div>
+<div class="shop-cart-item-copy">
+<p class="shop-sku">MODEL / {{ item.sku }}</p>
+<a href="/product/{{ item.sku }}" class="shop-cart-item-title">{{ item.name }}</a>
+<p class="shop-muted">&euro;{{ (item.price || (item.subtotal / item.qty)).toFixed(2) }} each</p>
+<div class="shop-inline-actions">
+<button type="button" class="shop-text-button" ng-click="saveForLater(item)">Save for later</button>
+<button type="button" class="shop-text-button shop-danger" ng-click="removeItem(item)">Remove</button>
+</div>
+</div>
+<strong class="shop-line-total">&euro;{{ item.subtotal.toFixed(2) }}</strong>
+</article>
+<div class="shop-panel-footer">
+<button type="button" class="btn btn-purchase" ng-click="buy()">Continue to delivery &rarr;</button>
+</div>
+</div>
+    </div>
+<aside class="price-details-card" ng-if="data.cart && data.cart.total != 0" aria-label="Order summary">
+<h2 class="price-details-header">Order summary</h2>
+<div class="price-breakdown-body">
+<div class="price-row">
+<span>Cart total</span>
+<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+</div>
+<div class="price-row">
+<span>Included tax</span>
+<span>&euro;{{ data.cart.tax.toFixed(2) }}</span>
+</div>
+<div class="price-row">
+<span>Shipping</span>
+<span>Next step</span>
+</div>
+<div class="price-row total-row">
+<span>Total</span>
+<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+</div>
+</div>
+<p class="shop-summary-note">Choose your destination to calculate shipping.</p>
+</aside>
+</div>
+</section>
