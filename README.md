@@ -1,118 +1,103 @@
-# Robot Shop — local Kind and GitOps environment
+# Robot Shop application
 
-This branch, **codex/kind-test**, contains the working Robot Shop deployment
-validated on Ubuntu/WSL. It uses Kind, ECR-built images, external MongoDB Atlas,
-Argo CD, optional automatic CI/CD, and Traefik HTTP ingress.
+Application source and image-building CI for the local Robot Shop environment.
+Infrastructure, Kubernetes manifests, operational scripts and project documentation
+live in [robot-shop-infra](https://github.com/ariphmohd/robot-shop-infra).
 
-**Start with the [recreation and recovery runbook](docs/kind-recovery.md).**
-It covers workstation prerequisites, a fresh cluster, database credentials,
-exact image loading, controller installation, GitOps bootstrap, backups,
-restores, troubleshooting, and rebuilding the AWS publisher infrastructure.
+## Repository layout
 
-## Current architecture
-
-```mermaid
-flowchart TB
-    Browser[Browser: http://localhost] --> Traefik[Traefik on Kind control plane]
-    Traefik --> Web[web Service and pod]
-    Web --> Catalogue[catalogue]
-    Web --> User[user]
-    Web --> Cart[cart]
-    Web --> Shipping[shipping]
-    Web --> Ratings[ratings]
-    Web --> Payment[payment]
-    Catalogue --> Atlas[(External MongoDB Atlas)]
-    User --> Atlas
-    User --> Redis[(Redis)]
-    Cart --> Redis
-    Cart --> Catalogue
-    Shipping --> MariaDB[(MariaDB + local PVC)]
-    Ratings --> MariaDB
-    Shipping --> Cart
-    Ratings --> Catalogue
-    Payment --> User
-    Payment --> Cart
-    Payment --> RabbitMQ[RabbitMQ]
-    RabbitMQ --> Dispatch[dispatch]
-    Git[GitHub: codex/kind-test] --> Argo[Argo CD]
-    Argo -->|sync| Kind[robot-shop resources in Kind]
+```text
+robot-shop/
+├── app/
+│   ├── catalogue/ cart/ user/ web/
+│   ├── shipping/ ratings/ payment/ dispatch/
+│   ├── mysql/ mongo/
+│   ├── ci/plan-images.py
+│   ├── ci/tests/test_image_planning.py
+│   ├── dev/preview-storefront.py
+│   ├── docker-compose.yaml
+│   └── LICENSE
+├── .github/workflows/container-images.yml
+├── .gitignore
+└── README.md
 ```
 
-The application has eleven pods: eight application services, MariaDB, Redis,
-and RabbitMQ. Argo CD and Traefik run in separate namespaces.
+Service directories contain their source, Dockerfile and service-specific tests.
+`app/ci` contains the build planner and its checks; `app/dev` contains local
+source-preview tooling. `.gitignore` protects local credentials and build output.
+Database seed scripts remain with application source. Running them against an
+existing database is not part of normal CI/CD.
 
-## Configuration entry points
+## Development and release
 
-| Path | Purpose |
-|---|---|
-| [infra/kind/kind-config.yaml](infra/kind/kind-config.yaml) | Two-node cluster and host ports 80/443 |
-| [infra/kind/traefik-values.yaml](infra/kind/traefik-values.yaml) | Pinned controller installation values |
-| [k8s/overlays/kind](k8s/overlays/kind/) | Application configuration watched by Argo CD |
-| [k8s/argocd/kind](k8s/argocd/kind/) | Kind AppProject and Application sync policy |
-| [.github/workflows/container-images.yml](.github/workflows/container-images.yml) | Nine-image ECR publishing pipeline |
-| [app](app/) | Application source, Dockerfiles, and database seed scripts |
-| [scripts/kind](scripts/kind/) | Manual recovery helpers |
-| [docs/kind-recovery.md](docs/kind-recovery.md) | Detailed operator instructions |
+- Feature branch: `features`.
+- Release branch: `codex/kind-test`.
+- Deployment manifests: `robot-shop-infra/main:k8s/overlays/kind`.
 
-The older dev/main Argo bootstrap remains separate. Do not apply
-k8s/argocd/application-dev.yaml to this Kind environment.
+Review feature changes through a PR into the release branch. PRs run tests and
+build selected images without publishing to ECR or writing infrastructure Git.
+On a release run, CI builds affected services and pushes immutable ECR image tags.
+If `KIND_CD_ENABLED=true`, it then commits those tags to the separate infra repo.
+Argo CD reconciles that repo according to its active sync policy, and Kind nodes
+pull the new images using the existing ECR pull Secret.
 
-## Validated baseline
+The planner reads desired tags from the separate infra checkout and carries
+forward application changes whose earlier builds never published manifests.
+Changes to CI/shared app configuration select all services. Preview-only changes
+under `app/dev/` do not trigger the image workflow. A green publishing job does
+not prove that the local cluster rollout has finished.
 
-- Kind v0.33.0; Kubernetes node image v1.33.0 pinned by digest.
-- Argo CD chart 10.11.1 / application v3.5.6.
-- Traefik chart 42.1.3 / application v3.7.16.
-- AWS account 542697646590, region us-east-1, ECR prefix robotshop-kind/.
-- Application images are immutable tags; current manifest references are authoritative.
-- A compatible kubectl client is required; see the runbook's version-skew note.
-- Catalogue/product queries, account order persistence, cart/Redis operations,
-  shipping/MariaDB calculations, ratings, and RabbitMQ dispatch have been exercised.
+During the repository handover, keep `KIND_CD_ENABLED=false` until the release
+workflow and first infra commit have been reviewed. See the
+[CI/CD handover guide](https://github.com/ariphmohd/robot-shop-infra/blob/main/docs/kind-ci-cd.md)
+for the separate activation steps. This layout cleanup does not enable CD.
 
-## Automatic source-to-cluster deployment
+## Local checks
 
-See [the CI/CD activation guide](docs/kind-ci-cd.md) for changed-service builds,
-GitHub-hosted image-tag commits, direct ECR pulls, local credential refresh,
-and Argo automatic sync. Manifest publication is gated by KIND_CD_ENABLED.
-
-## Daily operation
-
-Open **http://localhost**. A storefront port-forward is no longer needed.
-Argo CD's local UI still uses an HTTPS port-forward.
+Run from `/home/mohd/projects/robot-shop`:
 
 ```bash
-kubectl --context kind-robot-shop-test -n robot-shop get pods,pvc,ingress
-kubectl --context kind-robot-shop-test -n argocd get application robot-shop-kind
+python3 -B -m unittest discover -s app/ci/tests -p test_image_planning.py -v
+node --test app/web/tests/*.test.cjs
 ```
 
-To change workloads: edit explicit files, review the diff, commit/push to
-codex/kind-test, review Argo CD Diff, and sync according to the active Application policy.
-The CI/CD extension prepares automatic sync with pruning/self-healing disabled;
-it takes effect only after explicit activation. Configure ECR pull credentials
-before syncing new image tags; see the activation guide.
+Payment checks require a Python environment with
+`app/payment/tests/requirements.txt` installed:
 
-## Secrets and data
+```bash
+python3 -B -m unittest discover -s app/payment/tests -v
+```
 
-Atlas connection strings and the MariaDB root password are manually created
-Kubernetes Secrets. They are not in these manifests and must be recovered
-separately. Helpers accept hidden terminal input and refuse to overwrite
-existing Secrets.
+Infrastructure helper tests run from the other checkout:
 
-Shipping, ratings, and RabbitMQ still use known demo credentials in source or
-configuration. This is a local learning environment, not a production design.
+```bash
+cd /home/mohd/projects/robot-shop-infra
+python3 -B -m unittest discover -s tests -p test_kind_infra.py -v
+```
 
-MariaDB has a local 5 GiB PVC; Kind deletion is not a data-preserving operation.
-Redis and RabbitMQ are disposable. Atlas lives outside Kind and has its own
-backup requirements. **Git is not a database or credential backup.**
+## Source preview
 
-Read the runbook before maintenance. It includes a read-only database backup
-helper and explicit restore procedures. The runbook has not been validated by
-destroying and rebuilding the live environment.
+With the Kind storefront available at `http://localhost/`:
 
-## Scope
+```bash
+cd /home/mohd/projects/robot-shop
+python3 app/dev/preview-storefront.py
+```
 
-This branch contains no AWS Terraform and does not provision EKS, VPCs, RDS,
-ElastiCache, or Amazon MQ. ECR and its GitHub OIDC publisher were created
-manually; their recovery is documented. Future EKS deployments need separate
-validation of IAM, networking, storage, managed data services, and ingress.
+Open `http://localhost:18090/`. This is a temporary source preview; it reads
+catalogue/shipping information from Kind and uses isolated in-memory carts and
+demo orders. It does not deploy a container or save preview orders in Atlas.
+Restart the preview process after WSL restarts. The deployed app remains at
+`http://localhost/`.
 
-Licensed under [Apache License 2.0](LICENSE).
+## Documentation
+
+- [Infrastructure and operations](https://github.com/ariphmohd/robot-shop-infra)
+- [Repository ownership](https://github.com/ariphmohd/robot-shop-infra/blob/main/docs/repository-layout.md)
+- [Recreation and recovery](https://github.com/ariphmohd/robot-shop-infra/blob/main/docs/kind-recovery.md)
+- [Region and currency display](https://github.com/ariphmohd/robot-shop-infra/blob/main/docs/region-currency.md)
+- [Delivery and demo checkout](https://github.com/ariphmohd/robot-shop-infra/blob/main/docs/checkout-delivery.md)
+
+The application remains a local demo; feature changes do not establish production
+security or real payment/fulfilment capabilities. Keep credentials outside Git.
+Licensed under [Apache License 2.0](app/LICENSE).

@@ -8,9 +8,9 @@ import subprocess
 
 SERVICES = ("catalogue", "cart", "dispatch", "payment", "ratings", "shipping", "user", "web", "mysql")
 PIPELINE_PATHS = {
-    "tests/test_image_planning.py",
+    "app/ci/tests/test_image_planning.py",
     ".github/workflows/container-images.yml",
-    "scripts/ci/plan-images.py",
+    "app/ci/plan-images.py",
 }
 
 def select_services(paths, force_all=False):
@@ -18,6 +18,9 @@ def select_services(paths, force_all=False):
         return list(SERVICES)
     selected = set()
     for path in paths:
+        if path.startswith("app/dev/"):
+            # Local preview tooling is not included in any service image.
+            continue
         parts = path.split("/")
         if len(parts) >= 3 and parts[0] == "app" and parts[1] in SERVICES:
             selected.add(parts[1])

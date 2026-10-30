@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-ROOT = Path(__file__).resolve().parents[1]
-spec = importlib.util.spec_from_file_location("planner", ROOT / "scripts/ci/plan-images.py")
+ROOT = Path(__file__).resolve().parents[3]
+spec = importlib.util.spec_from_file_location("planner", ROOT / "app/ci/plan-images.py")
 planner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(planner)
 REGISTRY = "542697646590.dkr.ecr.us-east-1.amazonaws.com"
@@ -29,6 +29,12 @@ class SelectionTests(unittest.TestCase):
 
     def test_docs_and_legacy_infra_do_not_build(self):
         self.assertEqual(planner.select_services(["docs/kind-recovery.md", "scripts/kind/update-image-tags.py"]), [])
+
+    def test_preview_only_changes_do_not_build_images(self):
+        self.assertEqual(planner.select_services(["app/dev/preview-storefront.py"]), [])
+
+    def test_preview_and_service_changes_only_select_the_service(self):
+        self.assertEqual(planner.select_services(["app/dev/preview-storefront.py", "app/web/static/index.html"]), ["web"])
 
     def test_manual_build_selects_every_service(self):
         self.assertEqual(planner.select_services([], force_all=True), list(planner.SERVICES))

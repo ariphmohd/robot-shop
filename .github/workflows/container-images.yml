@@ -3,17 +3,15 @@ name: Build and deploy Robot Shop to Kind
   pull_request:
     paths:
     - app/**
+    - '!app/dev/**'
     - .github/workflows/container-images.yml
-    - scripts/ci/plan-images.py
-    - tests/test_image_planning.py
   push:
     branches:
     - codex/kind-test
     paths:
     - app/**
+    - '!app/dev/**'
     - .github/workflows/container-images.yml
-    - scripts/ci/plan-images.py
-    - tests/test_image_planning.py
   workflow_dispatch: null
 permissions:
   contents: read
@@ -40,7 +38,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Validate image build planning
-      run: python3 -m unittest discover -s tests -p test_image_planning.py -v
+      run: python3 -m unittest discover -s app/ci/tests -p test_image_planning.py -v
     - name: Validate storefront behavior
       run: node --test app/web/tests/*.test.cjs
     - name: Validate delivery and demo checkout
@@ -70,7 +68,7 @@ jobs:
       id: plan
       env:
         INFRA_ROOT: ${{ github.workspace }}/gitops
-      run: python3 scripts/ci/plan-images.py
+      run: python3 app/ci/plan-images.py
   build-and-publish:
     name: ${{ matrix.service }} image
     runs-on: ubuntu-latest
