@@ -30,12 +30,12 @@ existing database is not part of normal CI/CD.
 
 ## Development and release
 
-- Feature branch: `features`.
-- Release branch: `codex/kind-test`.
+- Application branch: `main` (the only retained branch after consolidation).
 - Deployment manifests: `robot-shop-infra/main:k8s/overlays/kind`.
 
-Review feature changes through a PR into the release branch. PRs run tests and
-build selected images without publishing to ECR or writing infrastructure Git.
+After consolidation, commit reviewed application changes to `main`. The workflow
+also supports unprivileged PR validation if temporary work branches are used in
+the future: PRs test/build without publishing to ECR or writing infrastructure Git.
 On a release run, CI builds affected services and pushes immutable ECR image tags.
 If `KIND_CD_ENABLED=true`, it then commits those tags to the separate infra repo.
 Argo CD reconciles that repo according to its active sync policy, and Kind nodes

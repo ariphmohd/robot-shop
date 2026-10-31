@@ -7,7 +7,7 @@ name: Build and deploy Robot Shop to Kind
     - .github/workflows/container-images.yml
   push:
     branches:
-    - codex/kind-test
+    - main
     paths:
     - app/**
     - '!app/dev/**'
@@ -46,7 +46,7 @@ jobs:
         python3 -m pip install -r app/payment/tests/requirements.txt
         python3 -m unittest discover -s app/payment/tests -v
     - name: Validate infrastructure destination
-      if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
+      if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       env:
         INFRA_REPOSITORY: ${{ vars.INFRA_REPOSITORY }}
         INFRA_BRANCH: ${{ vars.INFRA_BRANCH }}
@@ -56,7 +56,7 @@ jobs:
         [[ "$INFRA_REPOSITORY" == "ariphmohd/robot-shop-infra" ]] || { echo "Set INFRA_REPOSITORY to ariphmohd/robot-shop-infra"; exit 1; }
         [[ "$INFRA_BRANCH" == "main" ]] || { echo "Set INFRA_BRANCH to main"; exit 1; }
     - name: Read desired images from the infrastructure repository
-      if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
+      if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       uses: actions/checkout@v4
       with:
         repository: ${{ vars.INFRA_REPOSITORY }}
@@ -83,21 +83,21 @@ jobs:
     - name: Check out source
       uses: actions/checkout@v4
     - name: Set up QEMU for ARM64 publishing builds
-      if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       uses: docker/setup-qemu-action@v4
       with:
         platforms: arm64
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v4
     - name: Configure AWS credentials through GitHub OIDC
-      if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       uses: aws-actions/configure-aws-credentials@v4
       with:
         allowed-account-ids: '542697646590'
         role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
         aws-region: ${{ env.AWS_REGION }}
     - name: Log in to Amazon ECR
-      if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       shell: bash
       run: |
         set -euo pipefail
@@ -105,7 +105,7 @@ jobs:
         echo "ECR_REGISTRY=${registry}" >> "$GITHUB_ENV"
         aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
     - name: Build image for non-release validation
-      if: github.event_name == 'pull_request' || github.ref != 'refs/heads/codex/kind-test'
+      if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
       uses: docker/build-push-action@v7
       with:
         context: app/${{ matrix.service }}
@@ -116,7 +116,7 @@ jobs:
         tags: robotshop-ci/${{ matrix.service }}:${{ github.sha }}
         cache-from: type=gha,scope=robotshop-kind-${{ matrix.service }}
     - name: Build and push immutable ECR image
-      if: github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request'
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
       uses: docker/build-push-action@v7
       with:
         context: app/${{ matrix.service }}
@@ -136,7 +136,7 @@ jobs:
     needs:
     - plan
     - build-and-publish
-    if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/codex/kind-test' && github.event_name != 'pull_request' && vars.KIND_CD_ENABLED == 'true'
+    if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.KIND_CD_ENABLED == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -159,8 +159,8 @@ jobs:
       shell: bash
       run: |
         set -euo pipefail
-        git fetch origin refs/heads/codex/kind-test:refs/remotes/origin/codex/kind-test
-        if [[ "$(git rev-parse origin/codex/kind-test)" != "$GITHUB_SHA" ]]; then
+        git fetch origin refs/heads/main:refs/remotes/origin/main
+        if [[ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]]; then
           echo "current=false" >> "$GITHUB_OUTPUT"
           echo "Newer application commits are present; this run will not publish older image tags." >> "$GITHUB_STEP_SUMMARY"
         else
@@ -194,8 +194,8 @@ jobs:
       run: |
         set -euo pipefail
         [[ "$INFRA_BRANCH" == "main" ]]
-        git -C ../source fetch origin refs/heads/codex/kind-test:refs/remotes/origin/codex/kind-test
-        if [[ "$(git -C ../source rev-parse origin/codex/kind-test)" != "$GITHUB_SHA" ]]; then
+        git -C ../source fetch origin refs/heads/main:refs/remotes/origin/main
+        if [[ "$(git -C ../source rev-parse origin/main)" != "$GITHUB_SHA" ]]; then
           echo "The application branch advanced during preparation; refusing to publish older image tags."
           exit 1
         fi
