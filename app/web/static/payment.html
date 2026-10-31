@@ -19,47 +19,60 @@
     <div class="cart-layout" ng-if="data.cart && data.cart.total && !data.cont">
 <div class="cart-items-card shop-form-panel">
 <h2>Review your order</h2>
-<p class="shop-muted">Check your selection and delivery charge before continuing.</p>
+<p class="shop-muted">Review your selection and delivery charge. Demo orders are recorded in EUR.</p>
 <div class="shop-review-items">
 <div class="shop-review-item" ng-repeat="item in data.cart.items">
 <div>
 <strong>{{ item.name }}</strong>
 <span class="shop-field-hint">Quantity {{ item.qty }}</span>
 </div>
-<strong>&euro;{{ item.subtotal.toFixed(2) }}</strong>
+<strong>{{ money(item.subtotal, 'EUR') }}</strong>
 </div>
 </div>
-<p class="shop-notice" ng-if="(data.cart.items | filter:{sku:'SHIP'}:true).length === 0">Choose delivery before placing your order. <a href="/shipping">Go to delivery &rarr;</a>
+<p class="shop-notice" ng-if="!data.checkingCart && !canPlaceOrder() && !data.buttonDisabled">Confirm your delivery address for this cart. <a href="/shipping">Enter delivery details &rarr;</a>
 </p>
+<div class="shop-address-summary" ng-if="data.address">
+<div class="shop-section-title"><h3>Deliver to</h3><a href="/shipping" class="atelier-link">Edit address</a></div>
+<address>{{ data.address.flat }}, {{ data.address.street }}<br>{{ data.address.city }}, {{ data.address.country }} {{ data.address.postalCode }}</address>
+<p class="shop-field-hint">Estimated delivery: 3–5 business days after confirmation.</p>
+</div>
+<p ng-if="data.checkingCart" role="status">Checking your cart…</p>
+<button type="button" class="shop-text-button" ng-if="data.cartError" ng-click="loadReviewCart()">Retry cart check</button>
 <div class="shop-demo-note">
 <p class="eyebrow">DEMO CHECKOUT</p>
 <p>This store simulates payment. No card details are requested and no real charge is made.</p>
 </div>
-<button type="button" class="btn btn-purchase shop-full-width" ng-disabled="data.buttonDisabled || !data.cart.total || (data.cart.items | filter:{sku:'SHIP'}:true).length === 0" ng-click="pay()">{{ data.buttonDisabled ? 'Placing your order…' : 'Place demo order' }}</button>
+<button type="button" class="btn btn-purchase shop-full-width" ng-disabled="!canPlaceOrder()" ng-click="pay()">{{ data.buttonDisabled ? 'Placing your order…' : 'Place demo order' }}</button>
 </div>
 <aside class="price-details-card" aria-label="Final order total">
 <h2 class="price-details-header">Order summary</h2>
 <div class="price-breakdown-body">
 <div class="price-row">
 <span>Order total, with shipping</span>
-<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+<span>{{ money(data.cart.total, 'EUR') }}</span>
 </div>
 <div class="price-row">
 <span>Included tax</span>
-<span>&euro;{{ data.cart.tax.toFixed(2) }}</span>
+<span>{{ money(data.cart.tax, 'EUR') }}</span>
 </div>
 <div class="price-row total-row">
-<span>Total</span>
-<span>&euro;{{ data.cart.total.toFixed(2) }}</span>
+<span>Recorded total (EUR)</span>
+<span>{{ money(data.cart.total, 'EUR') }}</span>
 </div>
 </div>
+<p class="shop-summary-note" ng-if="regionState.current.currency !== 'EUR'">Approx. {{ money(data.cart.total) }} in your selected currency. The demo order is recorded in EUR; no real charge is made.</p>
 </aside>
 </div>
     <div class="shop-order-success" ng-if="data.cont">
 <p class="eyebrow">YOUR NEXT CHAPTER</p>
-<h2>Order received.</h2>
+<h2>Demo order completed.</h2>
 <p>Your order reference</p>
 <strong class="shop-order-reference">{{ data.orderid }}</strong>
+<div class="shop-confirmation-details">
+<div class="shop-address-summary"><p class="eyebrow">DELIVERY ADDRESS</p><address>{{ data.address.flat }}, {{ data.address.street }}<br>{{ data.address.city }}, {{ data.address.country }} {{ data.address.postalCode }}</address></div>
+<div class="shop-address-summary"><p class="eyebrow">ESTIMATED ARRIVAL</p><strong class="shop-arrival" ng-if="data.estimate">{{ deliveryDate(data.estimate.from) }} – {{ deliveryDate(data.estimate.to) }}</strong><p ng-if="data.estimate">{{ data.estimate.window }}, {{ data.estimate.timezone }}</p><p ng-if="!data.estimate">The delivery estimate is currently unavailable.</p><p class="shop-field-hint">Demo estimate only. No physical shipment has been booked.</p></div>
+</div>
+<p>Order total: <strong>{{ money(data.receiptTotal, 'EUR') }}</strong></p>
 <div class="shop-inline-actions">
 <a href="/login" class="btn btn-primary">View your account</a>
 <a href="/search" class="btn btn-secondary">Keep exploring</a>

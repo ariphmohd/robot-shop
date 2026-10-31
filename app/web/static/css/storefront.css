@@ -458,3 +458,41 @@ a, button { -webkit-tap-highlight-color: transparent; }
     .header-actions { gap: 5px; }
     .header-actions .nav-cart-item { padding: 6px; }
 }
+
+/* Region is a shopping preference, independent of the delivery address. */
+.region-selector { flex: 0 1 180px; min-width: 142px; max-width: 185px; }
+.region-selector label { display: block; color: var(--text-muted); font-size: 10px; letter-spacing: .06em; margin-bottom: 5px; }
+.region-selector select { display: block; width: 100%; min-height: 35px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-input); color: var(--text-primary); padding: 6px 22px 6px 8px; font: 500 11px var(--font-main); cursor: pointer; }
+.region-selector select:focus-visible { outline: 2px solid var(--shop-accent); outline-offset: 3px; }
+.currency-status { border-bottom: 1px solid var(--border-light); color: var(--text-muted); background: var(--bg-card); font-size: 11px; line-height: 1.7; }
+.currency-status .container { padding-top: 9px; padding-bottom: 9px; }
+.currency-status strong { color: var(--shop-accent); font-weight: 600; }
+.currency-status button { color: var(--shop-accent); background: transparent; border: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+.currency-status span[ng-if="regionState.storageUnavailable"] { display: block; }
+@media (min-width: 769px) and (max-width: 1200px) {
+    .header-inner { flex-wrap: wrap; gap: 14px; }
+    .search-container { order: 3; flex: 1 1 100%; max-width: none; }
+    .header-actions { margin-left: auto; }
+}
+@media (max-width: 768px) {
+    .region-selector { order: 4; flex: 1 1 100%; max-width: none; display: flex; align-items: center; gap: 12px; }
+    .region-selector label { margin: 0; flex-shrink: 0; }
+    .region-selector select { flex: 1; min-width: 0; }
+    .header-inner { row-gap: 12px; }
+    .currency-status { font-size: 10px; }
+}
+
+/* Delivery details and order receipt. */
+.shop-address-fields { border: 0; padding: 0; margin: 26px 0 0; min-width: 0; }
+.shop-address-fields .form-group { margin-bottom: 22px; }
+.shop-address-grid, .shop-confirmation-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.shop-city-suggestions { list-style: none; padding: 0; margin: 8px 0 0; border: 1px solid var(--border-color); border-radius: 6px; max-height: 240px; overflow-y: auto; }
+.shop-city-suggestions button { width: 100%; padding: 13px; text-align: left; color: var(--text-primary); background: var(--bg-input); border: 0; border-bottom: 1px solid var(--border-light); cursor: pointer; font: inherit; }
+.shop-city-suggestions button:hover, .shop-city-suggestions button:focus-visible { background: var(--bg-secondary); color: var(--shop-accent); outline: 2px solid var(--shop-accent); outline-offset: -2px; }
+.shop-address-summary { text-align: left; padding: 22px; border: 1px solid var(--border-color); border-radius: 8px; margin: 20px 0; overflow-wrap: anywhere; }
+.shop-address-summary address { font-style: normal; line-height: 1.8; }
+.shop-address-summary h3 { margin: 0; }
+.shop-arrival { display: block; color: var(--shop-accent); font-size: 20px; line-height: 1.5; }
+.shop-confirmation-details { max-width: 850px; margin: 12px auto; }
+.shop-order-reference { overflow-wrap: anywhere; }
+@media (max-width: 560px) { .shop-address-grid, .shop-confirmation-details { grid-template-columns: 1fr; gap: 0; } }

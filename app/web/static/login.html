@@ -69,7 +69,7 @@
 </div>
 <section class="shop-account-panel" aria-labelledby="orders-title">
 <div class="shop-section-title">
-<h2 id="orders-title">Your orders</h2>
+<h2 id="orders-title">Your orders <span class="shop-muted">(EUR)</span></h2>
 <span class="shop-muted">{{ data.orderHistory.length || 0 }} orders</span>
 </div>
 <div class="shop-empty" ng-if="!data.orderHistory.length">
@@ -80,9 +80,9 @@
 <article class="shop-order-row" ng-repeat="hist in data.orderHistory">
 <div>
 <p class="shop-sku">ORDER / {{ hist.orderid }}</p>
-<strong>{{ hist.items.length }} items</strong>
+<strong>{{ (hist.cart || hist).items.length }} items</strong>
 </div>
-<strong>&euro;{{ hist.total.toFixed(2) }}</strong>
+<strong>{{ money((hist.cart || hist).total, 'EUR') }}</strong>
 </article>
 </section>
 <section class="shop-account-panel" aria-labelledby="wishlist-title">
@@ -100,7 +100,7 @@
 <img ng-src="/images/{{ wish.sku }}.png" alt="{{ wish.name }}">
 <div>
 <h3>{{ wish.name }}</h3>
-<span>&euro;{{ wish.price.toFixed(2) }}</span>
+<span>{{ money(wish.price) }}</span>
 </div>
 </a>
 <div class="shop-wish-actions">
