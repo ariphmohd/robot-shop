@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "baseCurrency": "EUR",
+  "source": "ECB",
+  "asOf": "2026-10-29",
+  "rates": {
+    "EUR": "1",
+    "INR": "106.0345",
+    "USD": "1.1130",
+    "GBP": "0.83578"
+  }
+}

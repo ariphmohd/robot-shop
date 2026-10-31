@@ -1,30 +1,74 @@
-name: Build and publish container images
-
-on:
+name: Build and deploy Robot Shop to Kind
+'on':
   pull_request:
     paths:
-      - "app/**"
-      - ".github/workflows/container-images.yml"
+    - app/**
+    - '!app/dev/**'
+    - .github/workflows/container-images.yml
   push:
     branches:
-      - main
+    - main
     paths:
-      - "app/**"
-      - ".github/workflows/container-images.yml"
-  workflow_dispatch:
-
+    - app/**
+    - '!app/dev/**'
+    - .github/workflows/container-images.yml
+  workflow_dispatch: null
 permissions:
   contents: read
-
 concurrency:
   group: container-images-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
+  cancel-in-progress: false
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY_PREFIX: robotshop-dev
-
+  ECR_REPOSITORY_PREFIX: robotshop-kind
+  IMAGE_PLATFORMS: linux/amd64,linux/arm64
 jobs:
+  plan:
+    name: Select changed services
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      services: ${{ steps.plan.outputs.services }}
+      has_changes: ${{ steps.plan.outputs.has_changes }}
+      image_tag: ${{ steps.plan.outputs.image_tag }}
+    steps:
+    - name: Check out source
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Validate image build planning
+      run: python3 -m unittest discover -s app/ci/tests -p test_image_planning.py -v
+    - name: Validate storefront behavior
+      run: node --test app/web/tests/*.test.cjs
+    - name: Validate delivery and demo checkout
+      run: |
+        python3 -m pip install -r app/payment/tests/requirements.txt
+        python3 -m unittest discover -s app/payment/tests -v
+    - name: Validate infrastructure destination
+      if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      env:
+        INFRA_REPOSITORY: ${{ vars.INFRA_REPOSITORY }}
+        INFRA_BRANCH: ${{ vars.INFRA_BRANCH }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        [[ "$INFRA_REPOSITORY" == "ariphmohd/robot-shop-infra" ]] || { echo "Set INFRA_REPOSITORY to ariphmohd/robot-shop-infra"; exit 1; }
+        [[ "$INFRA_BRANCH" == "main" ]] || { echo "Set INFRA_BRANCH to main"; exit 1; }
+    - name: Read desired images from the infrastructure repository
+      if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ vars.INFRA_REPOSITORY }}
+        ref: ${{ vars.INFRA_BRANCH }}
+        token: ${{ secrets.INFRA_REPO_TOKEN }}
+        path: gitops
+        persist-credentials: false
+    - name: Plan image builds
+      id: plan
+      env:
+        INFRA_ROOT: ${{ github.workspace }}/gitops
+      run: python3 app/ci/plan-images.py
   build-and-publish:
     name: ${{ matrix.service }} image
     runs-on: ubuntu-latest
@@ -34,52 +78,142 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service:
-          - catalogue
-          - cart
-          - dispatch
-          - payment
-          - ratings
-          - shipping
-          - user
-          - web
-
+        service: ${{ fromJSON(needs.plan.outputs.services) }}
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-
-      - name: Configure AWS credentials through GitHub OIDC
-        if: github.event_name != 'pull_request'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Log in to Amazon ECR
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          registry="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
-          echo "ECR_REGISTRY=${registry}" >> "$GITHUB_ENV"
-          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
-
-      - name: Build image for pull-request validation
-        if: github.event_name == 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          docker build --pull --platform linux/amd64 \
-            --tag "robotshop-ci/${{ matrix.service }}:${GITHUB_SHA}" \
-            "app/${{ matrix.service }}"
-
-      - name: Build and push immutable ECR image
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          image_tag="sha-${GITHUB_SHA::12}-${GITHUB_RUN_ID}"
-          image_uri="${ECR_REGISTRY}/${ECR_REPOSITORY_PREFIX}/${{ matrix.service }}:${image_tag}"
-          docker build --pull --platform linux/amd64 --tag "$image_uri" "app/${{ matrix.service }}"
-          docker push "$image_uri"
-          echo "Published $image_uri"
+    - name: Check out source
+      uses: actions/checkout@v4
+    - name: Set up QEMU for ARM64 publishing builds
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: docker/setup-qemu-action@v4
+      with:
+        platforms: arm64
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+    - name: Configure AWS credentials through GitHub OIDC
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        allowed-account-ids: '542697646590'
+        role-to-assume: ${{ vars.AWS_ECR_PUSH_ROLE_ARN }}
+        aws-region: ${{ env.AWS_REGION }}
+    - name: Log in to Amazon ECR
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      shell: bash
+      run: |
+        set -euo pipefail
+        registry="$(aws sts get-caller-identity --query Account --output text).dkr.ecr.${AWS_REGION}.amazonaws.com"
+        echo "ECR_REGISTRY=${registry}" >> "$GITHUB_ENV"
+        aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$registry"
+    - name: Build image for non-release validation
+      if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+      uses: docker/build-push-action@v7
+      with:
+        context: app/${{ matrix.service }}
+        load: true
+        platforms: linux/amd64
+        pull: true
+        push: false
+        tags: robotshop-ci/${{ matrix.service }}:${{ github.sha }}
+        cache-from: type=gha,scope=robotshop-kind-${{ matrix.service }}
+    - name: Build and push immutable ECR image
+      if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+      uses: docker/build-push-action@v7
+      with:
+        context: app/${{ matrix.service }}
+        platforms: ${{ env.IMAGE_PLATFORMS }}
+        pull: true
+        push: true
+        tags: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY_PREFIX }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+        cache-from: type=gha,scope=robotshop-kind-${{ matrix.service }}
+        cache-to: type=gha,mode=max,scope=robotshop-kind-${{ matrix.service }}
+    needs:
+    - plan
+    if: needs.plan.outputs.has_changes == 'true'
+    env:
+      IMAGE_TAG: ${{ needs.plan.outputs.image_tag }}
+  publish-manifests:
+    name: Publish image tags to the infrastructure repository
+    needs:
+    - plan
+    - build-and-publish
+    if: github.repository == 'ariphmohd/robot-shop' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.KIND_CD_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    env:
+      SERVICES_JSON: ${{ needs.plan.outputs.services }}
+      IMAGE_TAG: ${{ needs.plan.outputs.image_tag }}
+      ECR_REGISTRY: 542697646590.dkr.ecr.us-east-1.amazonaws.com
+      INFRA_BRANCH: ${{ vars.INFRA_BRANCH }}
+    steps:
+    - name: Check out the exact application revision
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.sha }}
+        path: source
+        fetch-depth: 0
+    - name: Ignore superseded source revisions
+      id: source
+      working-directory: source
+      shell: bash
+      run: |
+        set -euo pipefail
+        git fetch origin refs/heads/main:refs/remotes/origin/main
+        if [[ "$(git rev-parse origin/main)" != "$GITHUB_SHA" ]]; then
+          echo "current=false" >> "$GITHUB_OUTPUT"
+          echo "Newer application commits are present; this run will not publish older image tags." >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "current=true" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Check out infrastructure for publishing
+      if: steps.source.outputs.current == 'true'
+      uses: actions/checkout@v4
+      with:
+        repository: ${{ vars.INFRA_REPOSITORY }}
+        ref: ${{ vars.INFRA_BRANCH }}
+        token: ${{ secrets.INFRA_REPO_TOKEN }}
+        path: gitops
+        persist-credentials: true
+    - name: Validate infrastructure tooling and prepare image references
+      if: steps.source.outputs.current == 'true'
+      working-directory: gitops
+      shell: bash
+      run: |
+        set -euo pipefail
+        test -f tests/test_kind_infra.py
+        python3 -m unittest discover -s tests -p test_kind_infra.py -v
+        python3 scripts/kind/update-image-tags.py \
+          --tag "$IMAGE_TAG" --services "$SERVICES_JSON" --registry "$ECR_REGISTRY"
+        git diff --check
+    - name: Publish image tags to infrastructure Git
+      id: publish
+      if: steps.source.outputs.current == 'true'
+      working-directory: gitops
+      shell: bash
+      run: |
+        set -euo pipefail
+        [[ "$INFRA_BRANCH" == "main" ]]
+        git -C ../source fetch origin refs/heads/main:refs/remotes/origin/main
+        if [[ "$(git -C ../source rev-parse origin/main)" != "$GITHUB_SHA" ]]; then
+          echo "The application branch advanced during preparation; refusing to publish older image tags."
+          exit 1
+        fi
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add k8s/overlays/kind/
+        if git diff --cached --quiet; then
+          echo "No image changes to publish."
+        else
+          git commit -m "Deploy Kind images $IMAGE_TAG" -m "Application source: https://github.com/ariphmohd/robot-shop/commit/$GITHUB_SHA"
+          # A concurrent infra commit must reject this push, never be overwritten.
+          git push origin "HEAD:refs/heads/$INFRA_BRANCH"
+        fi
+        echo "revision=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        {
+          echo "### Desired image tags published to infrastructure Git"
+          echo "Image tag: $IMAGE_TAG"
+          echo "Services: $SERVICES_JSON"
+          echo "Infrastructure commit: $(git rev-parse HEAD)"
+          echo "Argo CD reconciles robot-shop-infra/main; this job does not confirm cluster rollout."
+        } >> "$GITHUB_STEP_SUMMARY"

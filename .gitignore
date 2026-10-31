@@ -1,27 +1,3 @@
-# Terraform and OpenTofu
-# Working directories, state, and plan outputs can contain provider binaries or
-# plaintext credentials. Provider dependency locks are deliberately tracked.
-**/.terraform/*
-*.tfstate
-*.tfstate.*
-crash.log
-crash.*.log
-*.tfplan
-*tfplan*
-override.tf
-override.tf.json
-*_override.tf
-*_override.tf.json
-.terraformrc
-terraform.rc
-*secret*.tfvars
-*secrets*.tfvars
-*.secret.tfvars
-local.tfvars
-
-# Keep dependency selections reproducible.
-!**/.terraform.lock.hcl
-
 # Secrets and local configuration
 .env
 .env.*
@@ -91,3 +67,8 @@ Thumbs.db
 .classpath
 .project
 .settings/
+
+# Local recovery outputs; prefer protected storage outside this checkout.
+/backups/
+/recovery-private/
+/kind-logs/

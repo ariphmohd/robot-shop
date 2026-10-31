@@ -13,7 +13,8 @@ RUN mvn package -DskipTests
 #
 # Run
 #
-FROM eclipse-temurin:8-jre-alpine
+# Use the Ubuntu Java 8 runtime for both AMD64 and ARM64 CI builds.
+FROM eclipse-temurin:8-jre-jammy
 
 EXPOSE 8080
 

@@ -111,9 +111,9 @@
         // Theme Management: Light / Dark / System
         // ---------------------------------------------------------------------
         var themeKey = 'robotshop_theme';
-        var savedTheme = 'light';
+        var savedTheme = 'dark';
         try {
-            savedTheme = $window.localStorage.getItem(themeKey) || 'light';
+            savedTheme = $window.localStorage.getItem(themeKey) || 'dark';
         } catch (e) {}
 
         $rootScope.currentTheme = savedTheme;
@@ -332,15 +332,17 @@
 
         // Close dropdowns on outside click
         angular.element($window).on('click', function(e) {
-            var target = angular.element(e.target);
-            if (!target.closest('.theme-switch-container').length) {
+            // AngularJS jqLite has no closest(); use the native DOM element.
+            var target = e.target && (e.target.nodeType === 1 ? e.target : e.target.parentElement);
+            if (!target || typeof target.closest !== 'function') return;
+            if (!target.closest('.theme-switch-container')) {
                 if ($rootScope.themeMenuOpen) {
                     $rootScope.$apply(function() {
                         $rootScope.themeMenuOpen = false;
                     });
                 }
             }
-            if (!target.closest('.search-container').length) {
+            if (!target.closest('.search-container')) {
                 if ($rootScope.showSearchSuggest) {
                     $rootScope.$apply(function() {
                         $rootScope.showSearchSuggest = false;
@@ -527,10 +529,20 @@
             }).catch(function(e) {});
         }
 
+        $scope.catalogueLoading = true;
+        $scope.catalogueError = false;
+        $scope.retryCatalogue = loadAllProducts;
+
         function loadAllProducts() {
-            $http.get('/api/catalogue/products').then(function(res) {
+            $scope.catalogueLoading = true;
+            $scope.catalogueError = false;
+            return $http.get('/api/catalogue/products').then(function(res) {
                 $scope.data.allProducts = res.data || [];
-            }).catch(function(e) {});
+            }).catch(function() {
+                $scope.catalogueError = true;
+            }).finally(function() {
+                $scope.catalogueLoading = false;
+            });
         }
 
         function getUniqueid() {
@@ -733,25 +745,14 @@
         $scope.data = {};
         $scope.data.message = '';
         $scope.data.product = {};
-        $scope.data.rating = { avg_rating: 4.5, rating_count: 18 };
+        $scope.data.rating = { avg_rating: 0, rating_count: 0 };
+        $scope.data.productLoading = true;
+        $scope.data.productError = false;
         $scope.data.quantity = 1;
 
         $scope.activeImage = '';
         $scope.activeTab = 'specifications';
         $scope.relatedProducts = [];
-
-        // Delivery Estimator
-        $scope.deliveryPincode = '';
-        $scope.pincodeStatus = '';
-
-        $scope.checkDeliveryPincode = function() {
-            var pin = ($scope.deliveryPincode || '').trim();
-            if (pin.length >= 3) {
-                $scope.pincodeStatus = 'Delivery by Tomorrow, 5:00 PM | Free Express Freight';
-            } else {
-                $scope.pincodeStatus = 'Please enter a valid postal code or area.';
-            }
-        };
 
         $scope.setImage = function(imagePath) {
             $scope.activeImage = imagePath;
@@ -769,7 +770,7 @@
                 $scope.data.message = 'Added ' + $scope.data.quantity + 'x ' + $scope.data.product.name + ' to your cart!';
                 $timeout(clearMessage, 4000);
             }).catch(function(e) {
-                $scope.data.message = 'Error adding to cart: ' + e;
+                $scope.data.message = 'Could not add this robot. Please try again.';
                 $timeout(clearMessage, 4000);
             });
         };
@@ -781,14 +782,14 @@
                 currentUser.save();
                 $location.url('/cart');
             }).catch(function(e) {
-                $location.url('/cart');
+                $scope.data.message = 'Could not add this robot. Please try again.';
             });
         };
 
         $scope.rateProduct = function(score) {
             var url = '/api/ratings/api/rate/' + $scope.data.product.sku + '/' + score;
             $http.put(url).then(function(res) {
-                $scope.data.message = 'Thank you! Your verified ' + score + '★ rating has been recorded.';
+                $scope.data.message = 'Thank you! Your ' + score + '★ rating has been recorded.';
                 $timeout(clearMessage, 3000);
                 loadRating($scope.data.product.sku);
             }).catch(function(e) {
@@ -806,15 +807,21 @@
             }).catch(function(e) {});
         }
 
+        $scope.retryProduct = function() { loadProduct($routeParams.sku); };
+
         function loadProduct(sku) {
-            $http.get('/api/catalogue/product/' + sku).then(function(res) {
+            $scope.data.productLoading = true;
+            $scope.data.productError = false;
+            return $http.get('/api/catalogue/product/' + sku).then(function(res) {
                 $scope.data.product = res.data;
                 $scope.activeImage = '/images/' + res.data.sku + '.png';
                 if (res.data.categories && res.data.categories.length > 0) {
                     loadRelatedProducts(res.data.categories[0], res.data.sku);
                 }
             }).catch(function(e) {
-                console.log('Error loading product', e);
+                $scope.data.productError = true;
+            }).finally(function() {
+                $scope.data.productLoading = false;
             });
         }
 
@@ -915,104 +922,139 @@
     // =========================================================================
     // 8. Shipform Controller (Distance & Freight Routing)
     // =========================================================================
-    robotshop.controller('shipform', ['$scope', '$rootScope', '$http', '$location', 'currentUser', function($scope, $rootScope, $http, $location, currentUser) {
-        $scope.data = {};
-        $scope.data.countries = [];
-        $scope.data.selectedCountry = '';
-        $scope.data.selectedLocation = '';
-        $scope.data.disableCity = true;
-        $scope.data.disableCalc = true;
-        $scope.data.shipping = '';
-        $scope.data.cart = currentUser.cart;
-
-        var autoLocation;
-        var uuid;
-
-        $scope.calcShipping = function() {
-            $http.get('/api/shipping/calc/' + uuid).then(function(res) {
-                $scope.data.shipping = res.data;
-                $scope.data.shipping.location = $scope.data.selectedCountry.name + ' ' + autoLocation;
-            }).catch(function(e) {
-                console.log('Error calculating shipping', e);
-            });
+    robotshop.controller('shipform', ['$scope', '$rootScope', '$http', '$location', '$timeout', 'currentUser', 'checkoutState', function($scope, $rootScope, $http, $location, $timeout, currentUser, checkoutState) {
+        var version = 0, timer, destroyed = false;
+        $scope.data = { countries: [], country: null, cityName: '', city: null, cities: [],
+            street: '', flat: '', postalCode: '', cart: currentUser.cart, shipping: null,
+            loadingCountries: true, findingCities: false, calculating: false, busy: false, message: '' };
+        var data = $scope.data;
+        // Revisiting delivery requires a fresh quote; no address is persisted to storage.
+        checkoutState.clear();
+        $scope.loadCountries = function() {
+            data.loadingCountries = true; data.message = '';
+            return $http.get('/api/shipping/codes', {timeout: 10000}).then(function(res) {
+                data.countries = Array.isArray(res.data) ? res.data : [];
+                if (!data.countries.length) data.message = 'Countries could not be loaded. Please try again.';
+            }).catch(function() {
+                data.message = 'Countries could not be loaded. Please try again.';
+            }).finally(function() { data.loadingCountries = false; });
         };
-
-        $scope.confirmShipping = function() {
-            $http.post('/api/shipping/confirm/' + currentUser.uniqueid, $scope.data.shipping).then(function(res) {
-                currentUser.cart = res.data;
-                currentUser.save();
-                $location.url('/payment');
-            }).catch(function(e) {
-                console.log('Error confirming shipping', e);
-            });
-        };
-
-        $scope.countryChanged = function() {
-            if ($scope.data.selectedCountry) {
-                $scope.data.disableCity = false;
-            }
-            $scope.data.selectedLocation = '';
-            $scope.data.disableCalc = true;
-            $scope.data.shipping = '';
-        };
-
-        function loadCodes() {
-            $http.get('/api/shipping/codes').then(function(res) {
-                $scope.data.countries = res.data;
-            }).catch(function(e) {});
+        function invalidateCity() {
+            version++; $timeout.cancel(timer);
+            data.city = null; data.cities = []; data.shipping = null;
+            data.findingCities = false; data.calculating = false; data.message = ''; data.searched = false;
         }
-
-        function buildauto() {
-            var ac = new autoComplete({
-                selector: '#location',
-                minChars: 3,
-                source: function(term, suggest) {
-                    $http.get('/api/shipping/match/' + $scope.data.selectedCountry.code + '/' + term).then(function(res) {
-                        suggest(res.data);
+        $scope.countryChanged = function() { invalidateCity(); data.cityName = ''; };
+        $scope.cityChanged = function() {
+            invalidateCity();
+            var term = (data.cityName || '').trim(), requestVersion = version;
+            if (!data.country || term.length < 3) return;
+            data.findingCities = true;
+            timer = $timeout(function() {
+                $http.get('/api/shipping/match/' + encodeURIComponent(data.country.code) + '/' + encodeURIComponent(term), {timeout: 10000}).then(function(res) {
+                    if (destroyed || requestVersion !== version) return;
+                    data.cities = (Array.isArray(res.data) ? res.data : []).filter(function(city) {
+                        return city && Number.isSafeInteger(city.uuid) && city.uuid > 0 && typeof city.name === 'string' && city.code === data.country.code;
                     });
-                },
-                renderItem: function(item, search) {
-                    return '<div class="autocomplete-suggestion" data-name="' + item.name + '" data-uuid="' + item.uuid + '">' + item.name + '</div>';
-                },
-                onSelect: function(e, term, item) {
-                    autoLocation = item.getAttribute('data-name');
-                    uuid = item.getAttribute('data-uuid');
-                    $scope.data.disableCalc = false;
-                    $scope.$apply();
-                }
+                    data.searched = true;
+                }).catch(function() {
+                    if (!destroyed && requestVersion === version) data.message = 'City lookup failed. Edit the city name to try again.';
+                }).finally(function() {
+                    if (!destroyed && requestVersion === version) data.findingCities = false;
+                });
+            }, 300);
+        };
+        $scope.selectCity = function(city) {
+            invalidateCity(); data.city = city; data.cityName = city.name;
+            $scope.calcShipping();
+        };
+        $scope.calcShipping = function() {
+            if (!data.city || data.calculating) return;
+            var requestVersion = version;
+            data.calculating = true; data.message = '';
+            return $http.get('/api/shipping/calc/' + data.city.uuid, {timeout: 10000}).then(function(res) {
+                if (destroyed || requestVersion !== version) return;
+                if (!res.data || !Number.isFinite(res.data.cost) || res.data.cost < 0 || !Number.isFinite(res.data.distance) || res.data.distance < 0) throw new Error('Invalid quote');
+                data.shipping = { cost: res.data.cost, distance: res.data.distance,
+                    location: data.country.name + ' ' + data.city.name };
+            }).catch(function() {
+                if (!destroyed && requestVersion === version) data.message = 'Shipping could not be calculated. Please try again.';
+            }).finally(function() {
+                if (!destroyed && requestVersion === version) data.calculating = false;
             });
-        }
-
-        loadCodes();
-        buildauto();
+        };
+        $scope.productTotal = function() {
+            return ((data.cart && data.cart.items) || []).reduce(function(sum, item) {
+                return sum + (item.sku === 'SHIP' ? 0 : item.subtotal);
+            }, 0);
+        };
+        $scope.confirmShipping = function(form) {
+            if (data.busy) return;
+            if (form) form.$setSubmitted();
+            var address = {countryCode: data.country && data.country.code, country: data.country && data.country.name,
+                cityId: data.city && data.city.uuid, city: data.city && data.city.name,
+                street: (data.street || '').trim(), flat: (data.flat || '').trim(), postalCode: (data.postalCode || '').trim()};
+            if ((form && form.$invalid) || !checkoutState.validAddress(address) || !data.shipping || !currentUser.uniqueid) {
+                data.message = 'Choose a city from the suggestions and enter your street and flat / house number.'; return;
+            }
+            data.busy = true; data.message = '';
+            return $http.post('/api/shipping/confirm/' + encodeURIComponent(currentUser.uniqueid), data.shipping, {timeout: 15000}).then(function(res) {
+                if (!res.data || !Array.isArray(res.data.items) || !res.data.items.some(function(item) { return item.sku === 'SHIP'; })) throw new Error('Invalid cart');
+                currentUser.cart = res.data; currentUser.save();
+                checkoutState.address = address; checkoutState.cartKey = checkoutState.key(res.data);
+                $location.url('/payment');
+            }).catch(function() {
+                data.message = 'Delivery could not be confirmed. Your order has not been placed. Please try again.';
+            }).finally(function() { data.busy = false; });
+        };
+        $scope.$on('$destroy', function() { destroyed = true; version++; $timeout.cancel(timer); });
+        $scope.loadCountries();
     }]);
 
     // =========================================================================
-    // 9. Paymentform Controller (AMQP Queue Settlement)
+    // 9. Review and demo order confirmation
     // =========================================================================
-    robotshop.controller('paymentform', ['$scope', '$rootScope', '$http', 'currentUser', function($scope, $rootScope, $http, currentUser) {
-        $scope.data = {};
-        $scope.data.message = '';
-        $scope.data.buttonDisabled = false;
-        $scope.data.cont = false;
-        $scope.data.uniqueid = currentUser.uniqueid;
-        $scope.data.cart = currentUser.cart;
-        $scope.data.paymentMethod = 'card';
-
+    robotshop.controller('paymentform', ['$scope', '$rootScope', '$http', 'currentUser', 'checkoutState', function($scope, $rootScope, $http, currentUser, checkoutState) {
+        var data = $scope.data = { message: '', buttonDisabled: false, cont: false,
+            cart: currentUser.cart, address: angular.copy(checkoutState.address), checkingCart: true };
+        $scope.canPlaceOrder = function() { return !data.cartError && !data.checkingCart && !data.buttonDisabled && checkoutState.ready(data.cart); };
+        $scope.deliveryDate = function(value) {
+            if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+            var date = new Date(value + 'T12:00:00Z');
+            return Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-GB', {day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC'}).format(date) : '';
+        };
+        $scope.loadReviewCart = function() {
+            data.checkingCart = true; data.cartError = false;
+            return $http.get('/api/cart/cart/' + encodeURIComponent(currentUser.uniqueid), {timeout: 10000}).then(function(res) {
+                data.cart = res.data; currentUser.cart = res.data; currentUser.save();
+            }).catch(function() {
+                data.cartError = true; data.message = 'Your cart could not be verified. Please try again.';
+            }).finally(function() { data.checkingCart = false; });
+        };
         $scope.pay = function() {
-            $scope.data.buttonDisabled = true;
-            $http.post('/api/payment/pay/' + $scope.data.uniqueid, $scope.data.cart).then(function(res) {
-                $scope.data.orderid = res.data.orderid;
-                $scope.data.message = 'Payment Verified & Order Dispatched: ' + res.data.orderid;
-                $scope.data.cart = { total: 0, items: [] };
-                currentUser.cart = $scope.data.cart;
-                currentUser.save();
-                $scope.data.cont = true;
-            }).catch(function(e) {
-                $scope.data.message = 'Error processing payment settlement. Please try again.';
-                $scope.data.buttonDisabled = false;
+            if (data.cartError || !$scope.canPlaceOrder()) return;
+            data.buttonDisabled = true; data.message = '';
+            var payload = angular.copy(data.cart);
+            payload.deliveryAddress = angular.copy(checkoutState.address);
+            return $http.post('/api/payment/pay/' + encodeURIComponent(currentUser.uniqueid), payload, {timeout: 60000}).then(function(res) {
+                if (!res.data || typeof res.data.orderid !== 'string' || !res.data.orderid) {
+                    data.message = 'The order response was incomplete. Check your order history before trying again.';
+                    return; // An ambiguous response must not invite a duplicate submission.
+                }
+                data.orderid = res.data.orderid;
+                data.estimate = res.data.delivery && res.data.delivery.estimate;
+                data.receiptTotal = data.cart.total;
+                data.cart = {total: 0, tax: 0, items: []};
+                currentUser.cart = data.cart; currentUser.save(); checkoutState.clear();
+                data.cont = true;
+            }).catch(function(error) {
+                data.message = error.status === 400 ? 'Check your delivery details and cart before trying again.' :
+                    'We could not confirm the order. Check your order history before trying again.';
+                // A 4xx validation rejection is safe to retry; ambiguous failures stay locked.
+                if (error.status >= 400 && error.status < 500) data.buttonDisabled = false;
             });
         };
+        $scope.loadReviewCart();
     }]);
 
     // =========================================================================

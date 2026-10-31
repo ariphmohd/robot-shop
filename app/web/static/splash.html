@@ -1,39 +1,64 @@
 <div class="atelier-home">
-    <section class="atelier-hero">
+    <section class="atelier-hero" aria-labelledby="hero-title">
         <div class="atelier-hero-copy">
-            <p class="eyebrow">ARTISANAL ROBOTICS · EST. 2026</p>
-            <h1>Intelligence,<br>made tangible.</h1>
-            <p class="atelier-intro">Thoughtful autonomous companions, engineered for the quietly extraordinary moments of everyday life.</p>
-            <div class="atelier-actions"><a href="#best-sellers" class="atelier-cta">Shop best sellers <span>→</span></a><a href="/search" class="atelier-link">Explore the collection</a></div>
-            <div class="atelier-assurance"><span>01</span> Considered design <span>02</span> Human-centred AI <span>03</span> Two-year care</div>
+            <p class="eyebrow"><span class="shop-signal" aria-hidden="true"></span> THE NEXT GENERATION OF ROBOTICS</p>
+            <h1 id="hero-title">The future.<br><em>Within reach.</em></h1>
+            <p class="atelier-intro">Intelligence that moves. Machines that inspire. Discover your next breakthrough in our world of robotics.</p>
+            <div class="atelier-actions"><a href="/search" class="atelier-cta">Explore the collection <span aria-hidden="true">↗</span></a><a href="/product/Watson" class="atelier-link">Meet Watson <span aria-hidden="true">→</span></a></div>
+            <div class="shop-hero-footnote"><span>RESEARCH</span><span>INDUSTRY</span><span>EXPLORATION</span></div>
         </div>
-        <div class="atelier-hero-art"><img src="/images/hero-artisanal-robot.png" alt="A warm ivory autonomous robot in an artisanal studio"></div>
+        <a class="atelier-hero-art" href="/product/Watson" aria-label="Explore Watson artificial intelligence robot">
+            <div class="shop-model-top"><span>FEATURED MACHINE</span><span>01 / WATSON</span></div>
+            <img src="/images/Watson.png" alt="Watson humanoid robot with silver armour and cyan accents" fetchpriority="high">
+            <div class="atelier-art-caption"><div><span>ARTIFICIAL INTELLIGENCE</span><strong>Meet Watson.</strong></div><span class="shop-model-arrow" aria-hidden="true">↗</span></div>
+        </a>
     </section>
-
-    <section class="atelier-intro-strip" aria-label="Brand principles"><p>Small-batch intelligence for homes, studios and curious minds.</p><span>Made to work beautifully. Made to belong.</span></section>
+    <section class="atelier-intro-strip" aria-label="Explore the range"><p>Extraordinary machines. <span>Real possibilities.</span></p><a href="/search">Find your next robot <span aria-hidden="true">→</span></a></section>
 
     <section class="atelier-products" id="best-sellers">
-        <div class="atelier-section-heading"><div><p class="eyebrow">THE COLLECTION</p><h2>Best sellers, chosen with care.</h2></div><a href="/search" class="atelier-link">View all robots →</a></div>
-        <div class="atelier-filter-tags" aria-label="Product categories">
-            <button type="button" ng-click="filterCategory('All')" ng-class="{'active': selectedCategory === 'All'}">All creations</button>
-            <button type="button" ng-click="filterCategory('Home Companions')" ng-class="{'active': selectedCategory === 'Home Companions'}">Home companions</button>
-            <button type="button" ng-click="filterCategory('Field Robotics')" ng-class="{'active': selectedCategory === 'Field Robotics'}">Field robotics</button>
-            <button type="button" ng-click="filterCategory('AI Modules')" ng-class="{'active': selectedCategory === 'AI Modules'}">AI modules</button>
-            <button type="button" ng-click="filterCategory('Accessories')" ng-class="{'active': selectedCategory === 'Accessories'}">Accessories</button>
+        <div class="atelier-section-heading"><div><p class="eyebrow">YOUR NEXT BREAKTHROUGH</p><h2>Find your kind of extraordinary.</h2></div><a href="/search" class="atelier-link">View all robots →</a></div>
+        <div class="atelier-filter-tags" role="group" aria-label="Product categories">
+            <button type="button" ng-click="filterCategory('All')" ng-class="{'active': selectedCategory === 'All'}" aria-pressed="{{ selectedCategory === 'All' }}">All robots</button>
+            <button type="button" ng-click="filterCategory('Home Companions')" ng-class="{'active': selectedCategory === 'Home Companions'}" aria-pressed="{{ selectedCategory === 'Home Companions' }}">Home companions</button>
+            <button type="button" ng-click="filterCategory('Field Robotics')" ng-class="{'active': selectedCategory === 'Field Robotics'}" aria-pressed="{{ selectedCategory === 'Field Robotics' }}">Field robotics</button>
+            <button type="button" ng-click="filterCategory('AI Modules')" ng-class="{'active': selectedCategory === 'AI Modules'}" aria-pressed="{{ selectedCategory === 'AI Modules' }}">AI modules</button>
+            <button type="button" ng-click="filterCategory('Accessories')" ng-class="{'active': selectedCategory === 'Accessories'}" aria-pressed="{{ selectedCategory === 'Accessories' }}">Accessories</button>
         </div>
-        <div class="atelier-product-grid">
+        <div class="atelier-collection-status" role="status" aria-live="polite">
+            <p ng-if="catalogueLoading">Finding your next robot&hellip;</p>
+            <p ng-if="!catalogueLoading && !catalogueError && (data.allProducts | filter:categoryFilter).length > 0">
+                Showing {{ (data.allProducts | filter:categoryFilter | limitTo:8).length }} of
+                {{ (data.allProducts | filter:categoryFilter).length }} robots
+                <span ng-if="selectedCategory !== 'All'">in {{ selectedCategory }}</span>
+            </p>
+            <div class="atelier-collection-message" ng-if="!catalogueLoading && catalogueError">
+                <h3>We couldn&rsquo;t load the collection.</h3>
+                <p>Please try again in a moment.</p>
+                <button type="button" class="atelier-collection-reset" ng-click="retryCatalogue()">Try again</button>
+            </div>
+            <div class="atelier-collection-message" ng-if="!catalogueLoading && !catalogueError && (data.allProducts | filter:categoryFilter).length === 0">
+                <h3>No robots to show here yet.</h3>
+                <p ng-if="selectedCategory !== 'All'">Explore the full collection to find your next companion.</p>
+                <p ng-if="selectedCategory === 'All'">Check back soon for new additions to the collection.</p>
+                <button type="button" class="atelier-collection-reset" ng-if="selectedCategory !== 'All'" ng-click="filterCategory('All')">Show all robots</button>
+            </div>
+        </div>
+        <div class="atelier-product-grid" ng-if="!catalogueLoading && !catalogueError">
             <article class="atelier-product-card" ng-repeat="prod in data.allProducts | filter:categoryFilter | limitTo:8">
-                <button type="button" class="atelier-heart" ng-class="{'active': isInWishlist(prod.sku)}" ng-click="toggleWishlist(prod, $event);" aria-label="Save {{ prod.name }}">♡</button>
-                <a href="/product/{{ prod.sku }}" class="atelier-product-image"><img ng-src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}"></a>
-                <div class="atelier-product-copy"><span class="atelier-product-kind">{{ prod.categories[0] || 'ROBOTIC OBJECT' }}</span><a href="/product/{{ prod.sku }}"><h3>{{ prod.name }}</h3></a><p>{{ prod.description }}</p><div class="atelier-product-bottom"><strong>€{{ prod.price.toFixed(2) }}</strong><button type="button" ng-click="quickAddToCart(prod, $event);" ng-disabled="prod.instock === 0">{{ prod.instock === 0 ? 'Notify me' : 'Add to cart' }}</button></div></div>
+                <button type="button" class="atelier-heart" ng-class="{'active': isInWishlist(prod.sku)}" ng-click="toggleWishlist(prod, $event);" aria-label="Save {{ prod.name }}" aria-pressed="{{ isInWishlist(prod.sku) }}"><svg class="shop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/></svg></button>
+                <span class="atelier-stock" ng-class="{'is-unavailable': prod.instock === 0}">{{ prod.instock === 0 ? 'Out of stock' : 'In stock' }}</span>
+                <a href="/product/{{ prod.sku }}" class="atelier-product-image"><img ng-src="/images/{{ prod.sku }}.png" alt="{{ prod.name }}" loading="lazy" decoding="async"></a>
+                <div class="atelier-product-copy"><span class="atelier-product-kind">{{ prod.categories[0] || 'ROBOTIC OBJECT' }}</span><a href="/product/{{ prod.sku }}"><h3>{{ prod.name }}</h3></a><p>{{ prod.description }}</p><div class="atelier-product-bottom"><strong>{{ money(prod.price) }}</strong><button type="button" ng-click="quickAddToCart(prod, $event);" ng-disabled="prod.instock === 0">{{ prod.instock === 0 ? 'Unavailable' : 'Add to cart' }}</button></div></div>
             </article>
         </div>
     </section>
 
-    <section class="atelier-story"><div><p class="eyebrow">OUR PHILOSOPHY</p><h2>Technology with a softer edge.</h2></div><p>We pair advanced autonomy with enduring materials, allowing intelligent machines to feel less like equipment and more like considered objects in your world.</p><a href="/search" class="atelier-link">Read our approach →</a></section>
-
-    <section class="atelier-reviews" aria-label="Customer reviews">
-        <div class="atelier-section-heading"><div><p class="eyebrow">FROM OUR COMMUNITY</p><h2>Made for real life.</h2></div><span class="review-index">01 — 03</span></div>
-        <div class="review-carousel"><article class="review-card featured"><div class="review-stars">★★★★★</div><blockquote>“Our Watson has become the calm centre of our studio. It is beautifully quiet, surprisingly intuitive, and genuinely useful.”</blockquote><p>— Elena R., Creative director</p></article><article class="review-card"><div class="review-stars">★★★★★</div><blockquote>“A rare piece of technology that feels considered from every angle.”</blockquote><p>— Marcus T., Architect</p></article><article class="review-card"><div class="review-stars">★★★★★</div><blockquote>“The setup was graceful, the design is exceptional, and it has made our daily rituals easier.”</blockquote><p>— Priya S., Homeowner</p></article></div>
+    <section class="atelier-discover" aria-labelledby="discover-heading">
+        <div class="atelier-section-heading"><div><p class="eyebrow">BUILT FOR YOUR WORLD</p><h2 id="discover-heading">Choose your next frontier.</h2></div><p>From intelligent companions<br>to machines that go further.</p></div>
+        <div class="atelier-discover-grid">
+            <a href="/search/Artificial%20Intelligence" class="atelier-discover-card"><span class="atelier-discover-number">01 / THINK</span><h3>Intelligence.<br>Made tangible.</h3><span class="atelier-discover-link">Explore cognitive AI <span aria-hidden="true">↗</span></span></a>
+            <a href="/search/Robot" class="atelier-discover-card"><span class="atelier-discover-number">02 / DO</span><h3>Beyond the<br>ordinary.</h3><span class="atelier-discover-link">Explore field robotics <span aria-hidden="true">↗</span></span></a>
+            <a href="/search" class="atelier-discover-card"><span class="atelier-discover-number">03 / DISCOVER</span><h3>Your next<br>discovery.</h3><span class="atelier-discover-link">Meet the whole collection <span aria-hidden="true">↗</span></span></a>
+        </div>
     </section>
 </div>
